@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "845359804272",
+    "project_id": "rxt-walpaper",
+    "storage_bucket": "rxt-walpaper.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:845359804272:android:6122a22ad10cdb6118a9b5",
+        "android_client_info": {
+          "package_name": "com.gamingwalpaper.gamingwalpaper"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "845359804272-r8v3p2818p8nht3fgs2545p6jj2tsgjt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gamingwalpaper.gamingwalpaper",
+            "certificate_hash": "6aa61195c42aa797968e524553acd43f29140662"
+          }
+        },
+        {
+          "client_id": "845359804272-vopnh5rst8guar0kjaikgapq0ebmktrt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gamingwalpaper.gamingwalpaper",
+            "certificate_hash": "8da1eb4ed23067607ca2c653b510a406ce8d4f22"
+          }
+        },
+        {
+          "client_id": "845359804272-trrv44049h9odrh1s10gildk228move4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiz2LL5sTSw_Be45h-BBi9t04u45NMmQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "845359804272-trrv44049h9odrh1s10gildk228move4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
