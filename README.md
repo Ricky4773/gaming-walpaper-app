@@ -17,3 +17,6 @@ A Flutter-based Android wallpaper application featuring gaming wallpapers and Ad
 
 ## Developer
 Ritik Sharma
+
+## GitHub Repository
+https://github.com/Ricky4773/gaming-walpaper-app
