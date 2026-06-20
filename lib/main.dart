@@ -19,6 +19,7 @@ import 'package:video_player/video_player.dart';
 import 'package:wallpaper_manager_flutter/wallpaper_manager_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:just_audio/just_audio.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -34,6 +35,7 @@ const bannerAdUnitId = 'ca-app-pub-9819570141591797/8311390422';
 const adminEmail = 'ritiksharma5563@gmail.com';
 const downloadsChannel = MethodChannel('rxt_gaming/downloads');
 const liveWallpaperChannel = MethodChannel('rxt_gaming/live_wallpaper');
+const ringtoneChannel = MethodChannel('rxt_gaming/ringtone');
 
 bool isAdminEmail(String? email) {
   return email?.trim().toLowerCase() == adminEmail;
@@ -112,17 +114,17 @@ class PremiumActionButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: filled ? premiumGradient : null,
-          color: filled ? null : Colors.white.withOpacity(0.08),
+          color: filled ? null : Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: filled
-                ? Colors.white.withOpacity(0.18)
-                : premiumCyan.withOpacity(0.28),
+                ? Colors.white.withValues(alpha: 0.18)
+                : premiumCyan.withValues(alpha: 0.28),
           ),
           boxShadow: enabled && filled
               ? [
                   BoxShadow(
-                    color: premiumCyan.withOpacity(0.24),
+                    color: premiumCyan.withValues(alpha: 0.24),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -187,22 +189,22 @@ class CategoryPill extends StatelessWidget {
         color: selected
             ? null
             : isDark
-                ? Colors.white.withOpacity(0.07)
+                ? Colors.white.withValues(alpha: 0.07)
                 : Colors.white,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: selected
-              ? Colors.white.withOpacity(0.2)
+              ? Colors.white.withValues(alpha: 0.2)
               : isDark
-                  ? Colors.white.withOpacity(0.09)
-                  : Colors.black.withOpacity(0.08),
+                  ? Colors.white.withValues(alpha: 0.09)
+                  : Colors.black.withValues(alpha: 0.08),
         ),
         boxShadow: selected || !isDark
             ? [
                 BoxShadow(
                   color: selected
-                      ? premiumCyan.withOpacity(0.25)
-                      : Colors.black.withOpacity(0.05),
+                      ? premiumCyan.withValues(alpha: 0.25)
+                      : Colors.black.withValues(alpha: 0.05),
                   blurRadius: selected ? 18 : 12,
                   offset: Offset(0, selected ? 8 : 6),
                 ),
@@ -222,7 +224,7 @@ class CategoryPill extends StatelessWidget {
                 color: selected
                     ? Colors.white
                     : isDark
-                        ? Colors.white.withOpacity(0.76)
+                        ? Colors.white.withValues(alpha: 0.76)
                         : const Color(0xFF111827),
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 fontSize: 13,
@@ -307,9 +309,9 @@ class ShimmerWallpaperCard extends StatelessWidget {
                 begin: Alignment(-1.4 + animation.value * 2.8, -1),
                 end: Alignment(-0.4 + animation.value * 2.8, 1),
                 colors: [
-                  Colors.white.withOpacity(0.06),
-                  Colors.white.withOpacity(0.22),
-                  Colors.white.withOpacity(0.06),
+                  Colors.white.withValues(alpha: 0.06),
+                  Colors.white.withValues(alpha: 0.22),
+                  Colors.white.withValues(alpha: 0.06),
                 ],
                 stops: const [0.25, 0.5, 0.75],
               ).createShader(bounds);
@@ -390,11 +392,11 @@ class _GamingWallpaperAppState extends State<GamingWallpaperApp> {
           fillColor: Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
@@ -420,7 +422,7 @@ class _GamingWallpaperAppState extends State<GamingWallpaperApp> {
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: premiumBackground.withOpacity(0.94),
+          backgroundColor: premiumBackground.withValues(alpha: 0.94),
           foregroundColor: Colors.white,
           titleTextStyle: const TextStyle(
             fontSize: 19,
@@ -430,14 +432,14 @@ class _GamingWallpaperAppState extends State<GamingWallpaperApp> {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white.withOpacity(0.06),
+          fillColor: Colors.white.withValues(alpha: 0.06),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
@@ -556,6 +558,54 @@ class LiveWallpaperStyle {
     return LiveWallpaperStyle.fromJson(doc.data() ?? {});
   }
 }
+
+class Ringtone {
+  final String title;
+  final String audioUrl;
+  final String category;
+  final String coverImage;
+  final int durationSeconds;
+
+  const Ringtone({
+    required this.title,
+    required this.audioUrl,
+    required this.category,
+    this.coverImage = '',
+    this.durationSeconds = 0,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'audioUrl': audioUrl,
+      'category': category,
+      'coverImage': coverImage,
+      'durationSeconds': durationSeconds,
+    };
+  }
+
+  factory Ringtone.fromJson(Map<String, dynamic> json) {
+    return Ringtone(
+      title: (json['title'] ?? 'Untitled').toString(),
+      audioUrl: (json['audioUrl'] ?? '').toString(),
+      category: (json['category'] ?? 'Gaming').toString(),
+      coverImage: (json['coverImage'] ?? '').toString(),
+      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  factory Ringtone.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    return Ringtone.fromJson(doc.data() ?? {});
+  }
+}
+
+const ringtoneCategories = [
+  'Gaming',
+  'Action',
+  'Epic',
+  'Funny',
+  'Notification',
+];
 
 const wallpaperCategories = [
   'GTA',
@@ -709,6 +759,48 @@ class AppData {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(key, value);
   }
+
+  // ── Ringtones ──────────────────────────────────────────────────────────
+
+  static Future<List<Ringtone>> loadRingtones() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('customRingtones') ?? [];
+    final custom = saved.map((item) {
+      return Ringtone.fromJson(jsonDecode(item) as Map<String, dynamic>);
+    }).where((r) => r.audioUrl.isNotEmpty).toList();
+
+    final firestoreRingtones = <Ringtone>[];
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('ringtones').get();
+      for (final doc in snapshot.docs) {
+        final r = Ringtone.fromFirestore(doc);
+        if (r.audioUrl.isNotEmpty) firestoreRingtones.add(r);
+      }
+    } catch (_) {
+      // Keep app usable offline; rely on local ringtones only.
+    }
+
+    final byUrl = <String, Ringtone>{};
+    for (final r in [...firestoreRingtones, ...custom]) {
+      byUrl[r.audioUrl] = r;
+    }
+    return byUrl.values.toList();
+  }
+
+  static Future<void> addRingtone(Ringtone ringtone) async {
+    await FirebaseFirestore.instance.collection('ringtones').add({
+      ...ringtone.toJson(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static Future<void> addLocalRingtone(Ringtone ringtone) async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('customRingtones') ?? [];
+    saved.add(jsonEncode(ringtone.toJson()));
+    await prefs.setStringList('customRingtones', saved);
+  }
 }
 
 class SplashScreen extends StatefulWidget {
@@ -781,10 +873,10 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 230,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: premiumPink.withOpacity(0.16),
+                color: premiumPink.withValues(alpha: 0.16),
                 boxShadow: [
                   BoxShadow(
-                    color: premiumPink.withOpacity(0.28),
+                    color: premiumPink.withValues(alpha: 0.28),
                     blurRadius: 90,
                   ),
                 ],
@@ -816,12 +908,12 @@ class _SplashScreenState extends State<SplashScreen> {
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: premiumCyan.withOpacity(0.45),
+                          color: premiumCyan.withValues(alpha: 0.45),
                           blurRadius: 42,
                           spreadRadius: 2,
                         ),
                         BoxShadow(
-                          color: premiumPink.withOpacity(0.28),
+                          color: premiumPink.withValues(alpha: 0.28),
                           blurRadius: 52,
                           offset: const Offset(0, 18),
                         ),
@@ -851,7 +943,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   Text(
                     'Premium Wallpapers',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.68),
+                      color: Colors.white.withValues(alpha: 0.68),
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1332,10 +1424,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               decoration: BoxDecoration(
                 color: premiumPanel,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 boxShadow: [
                   BoxShadow(
-                    color: premiumCyan.withOpacity(0.12),
+                    color: premiumCyan.withValues(alpha: 0.12),
                     blurRadius: 28,
                     offset: const Offset(0, 14),
                   ),
@@ -1372,7 +1464,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                         ? 'Enter the OTP sent to ${formattedPhone}'
                         : 'Enter your phone number to receive OTP',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.66)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.66)),
                   ),
                   const SizedBox(height: 24),
                   TextField(
@@ -1626,6 +1718,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentTab = 0;
   List<Wallpaper> wallpapers = [];
   List<String> favorites = [];
+  List<Ringtone> ringtones = [];
+  List<String> ringtoneFavorites = [];
   bool isLoading = true;
   BannerAd? bannerAd;
   bool isBannerAdReady = false;
@@ -1649,10 +1743,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadData() async {
     final loadedWallpapers = await AppData.loadWallpapers();
     final loadedFavorites = await AppData.getStringList('favorites');
+    final loadedRingtones = await AppData.loadRingtones();
+    final loadedRingtoneFavs = await AppData.getStringList('ringtoneFavorites');
     if (!mounted) return;
     setState(() {
       wallpapers = loadedWallpapers;
       favorites = loadedFavorites;
+      ringtones = loadedRingtones;
+      ringtoneFavorites = loadedRingtoneFavs;
       isLoading = false;
     });
   }
@@ -1727,11 +1825,22 @@ class _HomeScreenState extends State<HomeScreen> {
         isLoading: isLoading,
         onRefresh: loadData,
       ),
+      _RingtonesTab(
+        ringtones: ringtones,
+        favorites: ringtoneFavorites,
+        isLoading: isLoading,
+        isAdmin: isAdmin,
+        onRefresh: loadData,
+        onFavoritesChanged: (newFavs) => setState(() => ringtoneFavorites = newFavs),
+      ),
       _FavoritesTab(
         wallpapers: wallpapers,
         favorites: favorites,
+        ringtones: ringtones,
+        ringtoneFavorites: ringtoneFavorites,
         onRefresh: loadData,
         onFavoritesChanged: (newFavs) => setState(() => favorites = newFavs),
+        onRingtoneFavoritesChanged: (newFavs) => setState(() => ringtoneFavorites = newFavs),
       ),
       _ProfileTab(
         isDark: isDark,
@@ -1763,28 +1872,43 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIndex: _currentTab,
             onDestinationSelected: (i) => setState(() => _currentTab = i),
             backgroundColor: isDark ? const Color(0xFF0A0D18) : Colors.white,
-            indicatorColor: premiumCyan.withOpacity(0.18),
+            indicatorColor: premiumCyan.withValues(alpha: 0.18),
             shadowColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
+            destinations: [
+              const NavigationDestination(
                 icon: Icon(Icons.grid_view_rounded),
                 selectedIcon: Icon(Icons.grid_view_rounded, color: premiumCyan),
                 label: 'Wallpapers',
               ),
-              NavigationDestination(
+              const NavigationDestination(
                 icon: Icon(Icons.category_outlined),
                 selectedIcon: Icon(Icons.category_rounded, color: premiumCyan),
                 label: 'Categories',
               ),
-              NavigationDestination(
-                icon: Icon(Icons.favorite_border_rounded),
-                selectedIcon: Icon(Icons.favorite_rounded, color: premiumCyan),
-                label: 'Favourites',
+              const NavigationDestination(
+                icon: Icon(Icons.music_note_outlined),
+                selectedIcon: Icon(Icons.music_note_rounded, color: premiumCyan),
+                label: 'Ringtones',
               ),
               NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: favorites.isNotEmpty,
+                  label: Text('${favorites.length}', style: const TextStyle(fontSize: 10)),
+                  backgroundColor: premiumPink,
+                  child: const Icon(Icons.favorite_border_rounded),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: favorites.isNotEmpty,
+                  label: Text('${favorites.length}', style: const TextStyle(fontSize: 10)),
+                  backgroundColor: premiumPink,
+                  child: const Icon(Icons.favorite_rounded, color: premiumCyan),
+                ),
+                label: 'Favourites',
+              ),
+              const NavigationDestination(
                 icon: Icon(Icons.person_outline_rounded),
                 selectedIcon: Icon(Icons.person_rounded, color: premiumCyan),
                 label: 'Profile',
@@ -1825,6 +1949,68 @@ class _WallpapersTab extends StatefulWidget {
 class _WallpapersTabState extends State<_WallpapersTab> {
   String query = '';
   String selectedCategory = 'All';
+  List<String> searchHistory = [];
+  bool showHistory = false;
+  final FocusNode _searchFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchHistory();
+    _checkOnboarding();
+    _searchFocus.addListener(() {
+      setState(() => showHistory = _searchFocus.hasFocus && query.isEmpty && searchHistory.isNotEmpty);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final h = await AppData.getStringList('search_history');
+    if (mounted) setState(() => searchHistory = h.reversed.take(6).toList());
+  }
+
+  Future<void> _saveSearchQuery(String q) async {
+    if (q.trim().isEmpty) return;
+    final h = await AppData.getStringList('search_history');
+    h.remove(q);
+    h.add(q);
+    if (h.length > 10) h.removeAt(0);
+    await AppData.saveStringList('search_history', h);
+    if (mounted) setState(() => searchHistory = h.reversed.take(6).toList());
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool('onboarding_done') ?? false;
+    if (!seen && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.push(context, smoothRoute(const OnboardingScreen()));
+        }
+      });
+    }
+  }
+
+  Wallpaper? get _dailyWallpaper {
+    if (widget.wallpapers.isEmpty) return null;
+    final day = DateTime.now().day + DateTime.now().month * 31;
+    return widget.wallpapers[day % widget.wallpapers.length];
+  }
+
+  List<Wallpaper> get _trendingWallpapers {
+    if (widget.wallpapers.length <= 4) return widget.wallpapers;
+    // Simulate trending: pick every 3rd starting from index 1
+    final result = <Wallpaper>[];
+    for (int i = 1; i < widget.wallpapers.length && result.length < 8; i += 3) {
+      result.add(widget.wallpapers[i]);
+    }
+    return result;
+  }
 
   List<String> get categories {
     final extra = widget.wallpapers
@@ -1858,6 +2044,9 @@ class _WallpapersTabState extends State<_WallpapersTab> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final visible = filtered;
+    final isSearching = query.isNotEmpty || selectedCategory != 'All';
+    final daily = _dailyWallpaper;
+    final trending = _trendingWallpapers;
 
     return SafeArea(
       child: Column(
@@ -1873,7 +2062,7 @@ class _WallpapersTabState extends State<_WallpapersTab> {
                   decoration: BoxDecoration(
                     gradient: premiumGradient,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: premiumCyan.withOpacity(0.3), blurRadius: 16)],
+                    boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.3), blurRadius: 16)],
                   ),
                   child: const Icon(Icons.sports_esports_rounded, size: 20, color: Colors.white),
                 ),
@@ -1909,60 +2098,41 @@ class _WallpapersTabState extends State<_WallpapersTab> {
                           ? const LinearGradient(colors: [Color(0xFF1A1F35), Color(0xFF0A0F1C)])
                           : const LinearGradient(colors: [Color(0xFFFFD600), Color(0xFFFF8C00)]),
                       border: Border.all(
-                        color: isDark ? premiumCyan.withOpacity(0.35) : Colors.orange.withOpacity(0.4),
+                        color: isDark ? premiumCyan.withValues(alpha: 0.35) : Colors.orange.withValues(alpha: 0.4),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? premiumCyan.withOpacity(0.18) : Colors.orange.withOpacity(0.28),
+                          color: isDark ? premiumCyan.withValues(alpha: 0.18) : Colors.orange.withValues(alpha: 0.28),
                           blurRadius: 10,
                         ),
                       ],
                     ),
                     child: Stack(
                       children: [
-                        // Track icons
                         Positioned(
-                          left: 3,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: Icon(
-                              Icons.nightlight_round,
-                              size: 13,
-                              color: isDark ? premiumCyan : Colors.white.withOpacity(0.4),
-                            ),
-                          ),
+                          left: 3, top: 0, bottom: 0,
+                          child: Center(child: Icon(Icons.nightlight_round, size: 13,
+                              color: isDark ? premiumCyan : Colors.white.withValues(alpha: 0.4))),
                         ),
                         Positioned(
-                          right: 3,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: Icon(
-                              Icons.wb_sunny_rounded,
-                              size: 13,
-                              color: isDark ? Colors.white.withOpacity(0.3) : Colors.white,
-                            ),
-                          ),
+                          right: 3, top: 0, bottom: 0,
+                          child: Center(child: Icon(Icons.wb_sunny_rounded, size: 13,
+                              color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.white)),
                         ),
-                        // Thumb
                         AnimatedAlign(
                           duration: const Duration(milliseconds: 260),
                           curve: Curves.easeInOut,
                           alignment: isDark ? Alignment.centerLeft : Alignment.centerRight,
                           child: Container(
-                            width: 22,
-                            height: 22,
+                            width: 22, height: 22,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isDark ? premiumCyan : Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: isDark ? premiumCyan.withOpacity(0.5) : Colors.orange.withOpacity(0.4),
-                                  blurRadius: 8,
-                                ),
-                              ],
+                              boxShadow: [BoxShadow(
+                                color: isDark ? premiumCyan.withValues(alpha: 0.5) : Colors.orange.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                              )],
                             ),
                             child: Icon(
                               isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
@@ -1982,35 +2152,84 @@ class _WallpapersTabState extends State<_WallpapersTab> {
 
           // ── Search bar ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.06) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: premiumCyan.withOpacity(0.2)),
-                boxShadow: [BoxShadow(color: premiumCyan.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8))],
-              ),
-              child: TextField(
-                onChanged: (v) => setState(() => query = v),
-                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF111827)),
-                decoration: InputDecoration(
-                  hintText: 'Search wallpapers…',
-                  hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-                  prefixIcon: const Icon(Icons.search_rounded, color: premiumCyan),
-                  suffixIcon: query.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () => setState(() => query = ''),
-                          icon: Icon(Icons.close_rounded, color: isDark ? Colors.white54 : Colors.black45),
-                        ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: premiumCyan.withValues(alpha: 0.2)),
+                    boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 8))],
+                  ),
+                  child: TextField(
+                    focusNode: _searchFocus,
+                    onChanged: (v) {
+                      setState(() { query = v; showHistory = v.isEmpty && searchHistory.isNotEmpty; });
+                    },
+                    onSubmitted: (v) { if (v.isNotEmpty) _saveSearchQuery(v); },
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF111827)),
+                    decoration: InputDecoration(
+                      hintText: 'Search wallpapers…',
+                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                      prefixIcon: const Icon(Icons.search_rounded, color: premiumCyan),
+                      suffixIcon: query.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () { setState(() { query = ''; showHistory = false; }); },
+                              icon: Icon(Icons.close_rounded, color: isDark ? Colors.white54 : Colors.black45),
+                            ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                  ),
                 ),
-              ),
+                // ── Search history chips ──────────────────────────
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: (showHistory && query.isEmpty)
+                      ? Padding(
+                          key: const ValueKey('history'),
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              ...searchHistory.map((h) => GestureDetector(
+                                onTap: () {
+                                  setState(() { query = h; showHistory = false; });
+                                  _searchFocus.unfocus();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(color: premiumCyan.withValues(alpha: 0.2)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.history_rounded, size: 13, color: isDark ? Colors.white54 : Colors.black45),
+                                      const SizedBox(width: 5),
+                                      Text(h, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white70 : Colors.black54)),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('no-history')),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 10),
 
           // ── Category pills ──────────────────────────────────────
           SizedBox(
@@ -2032,53 +2251,614 @@ class _WallpapersTabState extends State<_WallpapersTab> {
           ),
           const SizedBox(height: 8),
 
-          // ── Grid ────────────────────────────────────────────────
+          // ── Main scrollable content ─────────────────────────────
           Expanded(
             child: RefreshIndicator(
               onRefresh: widget.onRefresh,
               color: premiumCyan,
               child: widget.isLoading
                   ? const ShimmerLoadingGrid()
-                  : visible.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No wallpapers found',
-                            style: TextStyle(
-                              color: isDark ? Colors.white54 : Colors.black45,
-                              fontWeight: FontWeight.w600,
+                  : CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        // ── Daily wallpaper (only when not searching)
+                        if (!isSearching && daily != null)
+                          SliverToBoxAdapter(child: _DailyWallpaperCard(
+                            wallpaper: daily,
+                            isDark: isDark,
+                            onTap: () => openPreview(daily),
+                          )),
+
+                        // ── Stats strip (only when not searching)
+                        if (!isSearching)
+                          SliverToBoxAdapter(child: _StatsStrip(
+                            totalWallpapers: widget.wallpapers.length,
+                            totalFavourites: widget.favorites.length,
+                            isDark: isDark,
+                          )),
+
+                        // ── Trending (only when not searching)
+                        if (!isSearching && trending.isNotEmpty)
+                          SliverToBoxAdapter(child: _TrendingStrip(
+                            wallpapers: trending,
+                            isDark: isDark,
+                            onTap: openPreview,
+                          )),
+
+                        // ── Section title when searching
+                        if (isSearching)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                              child: Text(
+                                '${visible.length} result${visible.length == 1 ? '' : 's'}',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white54 : Colors.black45,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
                           ),
-                        )
-                      : LayoutBuilder(builder: (ctx, constraints) {
-                          final cols = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 620 ? 3 : 2;
-                          return GridView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                            itemCount: visible.length,
-                            cacheExtent: 900,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: cols,
-                              mainAxisSpacing: 14,
-                              crossAxisSpacing: 14,
-                              childAspectRatio: 0.68,
+
+                        // ── All wallpapers header
+                        if (!isSearching)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                              child: Text(
+                                'All Wallpapers',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : const Color(0xFF111827),
+                                ),
+                              ),
                             ),
-                            itemBuilder: (_, idx) {
-                              final w = visible[idx];
-                              return WallpaperTile(
-                                wallpaper: w,
-                                isFavorite: widget.favorites.contains(w.image),
-                                animationIndex: idx,
-                                onTap: () => openPreview(w),
-                              );
-                            },
-                          );
-                        }),
+                          ),
+
+                        // ── Grid
+                        visible.isEmpty
+                            ? SliverFillRemaining(
+                                child: Center(
+                                  child: Text('No wallpapers found',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white54 : Colors.black45,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                                sliver: SliverGrid(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (_, idx) {
+                                      final w = visible[idx];
+                                      // Mark last 5 as NEW
+                                      final isNew = idx >= visible.length - 5;
+                                      return WallpaperTile(
+                                        wallpaper: w,
+                                        isFavorite: widget.favorites.contains(w.image),
+                                        animationIndex: idx,
+                                        isNew: isNew,
+                                        onTap: () => openPreview(w),
+                                      );
+                                    },
+                                    childCount: visible.length,
+                                  ),
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 14,
+                                    crossAxisSpacing: 14,
+                                    childAspectRatio: 0.68,
+                                  ),
+                                ),
+                              ),
+                      ],
+                    ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+// ─── Daily Wallpaper Card ─────────────────────────────────────────────────────
+
+class _DailyWallpaperCard extends StatelessWidget {
+  final Wallpaper wallpaper;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _DailyWallpaperCard({required this.wallpaper, required this.isDark, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 180,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 10))],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(wallpaper.image, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: premiumPanel)),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withValues(alpha: 0.82)],
+                    ),
+                  ),
+                ),
+                // TOP badge
+                Positioned(
+                  top: 14, left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      gradient: premiumGradient,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.wb_sunny_rounded, size: 13, color: Colors.white),
+                        SizedBox(width: 5),
+                        Text('Daily Pick', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ),
+                // Tap to open hint
+                Positioned(
+                  top: 14, right: 14,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    ),
+                    child: const Icon(Icons.open_in_full_rounded, size: 16, color: Colors.white),
+                  ),
+                ),
+                // Bottom info
+                Positioned(
+                  left: 14, right: 14, bottom: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(wallpaper.title,
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, height: 1.1),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.auto_awesome_rounded, color: premiumCyan, size: 13),
+                        const SizedBox(width: 5),
+                        Text(wallpaper.category,
+                          style: const TextStyle(color: Color(0xFFB9F6FF), fontSize: 12, fontWeight: FontWeight.w700)),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Stats Strip ─────────────────────────────────────────────────────────────
+
+class _StatsStrip extends StatelessWidget {
+  final int totalWallpapers;
+  final int totalFavourites;
+  final bool isDark;
+
+  const _StatsStrip({required this.totalWallpapers, required this.totalFavourites, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      child: Row(
+        children: [
+          _StatCard(icon: Icons.image_rounded, label: 'Wallpapers', value: '$totalWallpapers',
+              colorA: premiumCyan, colorB: premiumViolet, isDark: isDark),
+          const SizedBox(width: 12),
+          _StatCard(icon: Icons.favorite_rounded, label: 'Favourites', value: '$totalFavourites',
+              colorA: premiumPink, colorB: premiumViolet, isDark: isDark),
+          const SizedBox(width: 12),
+          _StatCard(icon: Icons.category_rounded, label: 'Categories', value: '${wallpaperCategories.length}',
+              colorA: premiumGreen, colorB: premiumCyan, isDark: isDark),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color colorA;
+  final Color colorB;
+  final bool isDark;
+
+  const _StatCard({required this.icon, required this.label, required this.value,
+    required this.colorA, required this.colorB, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+          border: Border.all(color: colorA.withValues(alpha: 0.2)),
+          boxShadow: [BoxShadow(color: colorA.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          children: [
+            ShaderMask(
+              shaderCallback: (r) => LinearGradient(colors: [colorA, colorB]).createShader(r),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 6),
+            Text(value, style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : const Color(0xFF111827),
+            )),
+            Text(label, style: TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white38 : Colors.black38,
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Trending Strip ───────────────────────────────────────────────────────────
+
+class _TrendingStrip extends StatelessWidget {
+  final List<Wallpaper> wallpapers;
+  final bool isDark;
+  final ValueChanged<Wallpaper> onTap;
+
+  const _TrendingStrip({required this.wallpapers, required this.isDark, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+          child: Row(
+            children: [
+              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 20),
+              const SizedBox(width: 6),
+              Text('Trending', style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : const Color(0xFF111827),
+              )),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 140,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: wallpapers.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) {
+              final w = wallpapers[i];
+              return GestureDetector(
+                onTap: () { HapticFeedback.lightImpact(); onTap(w); },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 100,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(w.image, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(color: premiumPanel)),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.75)],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 6, left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text('#${i + 1}',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                        Positioned(
+                          left: 6, right: 6, bottom: 6,
+                          child: Text(w.title,
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, height: 1.2)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Onboarding Screen ────────────────────────────────────────────────────────
+
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final _controller = PageController();
+  int _page = 0;
+
+  static const _slides = [
+    _OnboardSlide(
+      icon: Icons.sports_esports_rounded,
+      title: 'Welcome to RXT Gaming',
+      subtitle: 'Thousands of premium gaming wallpapers at your fingertips.',
+      gradient: [Color(0xFF00E5FF), Color(0xFF7C4DFF)],
+    ),
+    _OnboardSlide(
+      icon: Icons.favorite_rounded,
+      title: 'Save Your Favourites',
+      subtitle: 'Tap the heart on any wallpaper to save it to your collection.',
+      gradient: [Color(0xFFFF2D92), Color(0xFF7C4DFF)],
+    ),
+    _OnboardSlide(
+      icon: Icons.wallpaper_rounded,
+      title: 'Set in One Tap',
+      subtitle: 'Apply directly to home screen, lock screen, or both.',
+      gradient: [Color(0xFF00FFC6), Color(0xFF00E5FF)],
+    ),
+  ];
+
+  Future<void> _finish() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_done', true);
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: premiumBackground,
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemCount: _slides.length,
+            itemBuilder: (_, i) => _OnboardPage(slide: _slides[i]),
+          ),
+          // Dots + button
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_slides.length, (i) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 260),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _page == i ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _page == i ? premiumCyan : Colors.white24,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      )),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: premiumGradient,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            if (_page < _slides.length - 1) {
+                              _controller.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
+                            } else {
+                              _finish();
+                            }
+                          },
+                          child: Text(
+                            _page < _slides.length - 1 ? 'Next' : 'Get Started',
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_page < _slides.length - 1)
+                      TextButton(
+                        onPressed: _finish,
+                        child: const Text('Skip', style: TextStyle(color: Colors.white38)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardSlide {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final List<Color> gradient;
+  const _OnboardSlide({required this.icon, required this.title, required this.subtitle, required this.gradient});
+}
+
+class _OnboardPage extends StatelessWidget {
+  final _OnboardSlide slide;
+  const _OnboardPage({required this.slide});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120, height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: slide.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(36),
+              boxShadow: [BoxShadow(color: slide.gradient[0].withValues(alpha: 0.4), blurRadius: 40, offset: const Offset(0, 16))],
+            ),
+            child: Icon(slide.icon, size: 56, color: Colors.white),
+          ),
+          const SizedBox(height: 40),
+          ShaderMask(
+            shaderCallback: (r) => LinearGradient(colors: slide.gradient).createShader(r),
+            child: Text(slide.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1)),
+          ),
+          const SizedBox(height: 16),
+          Text(slide.subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.6), height: 1.5)),
+          const SizedBox(height: 120),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Rate Us Dialog ───────────────────────────────────────────────────────────
+
+Future<void> maybeShowRateUs(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  final downloads = prefs.getInt('total_downloads') ?? 0;
+  final rated = prefs.getBool('rate_us_shown') ?? false;
+  if (rated || downloads < 5) return;
+  await prefs.setBool('rate_us_shown', true);
+  if (!context.mounted) return;
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: premiumPanel,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(gradient: premiumGradient, borderRadius: BorderRadius.circular(20)),
+              child: const Icon(Icons.star_rounded, color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 18),
+            const Text('Enjoying RXT Gaming?',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+              textAlign: TextAlign.center),
+            const SizedBox(height: 10),
+            Text('Rate us on Play Store to help us grow!',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+              textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white54,
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Later'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: premiumGradient, borderRadius: BorderRadius.circular(14)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: () { Navigator.pop(context); /* launch store URL here */ },
+                      child: const Text('Rate Now ⭐', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 // ─── Tab 2: Categories ────────────────────────────────────────────────────────
@@ -2238,13 +3018,13 @@ class _CategoryCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                meta.colorA.withOpacity(0.85),
-                meta.colorB.withOpacity(0.85),
+                meta.colorA.withValues(alpha: 0.85),
+                meta.colorB.withValues(alpha: 0.85),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: meta.colorA.withOpacity(0.35),
+                color: meta.colorA.withValues(alpha: 0.35),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -2259,7 +3039,7 @@ class _CategoryCard extends StatelessWidget {
                 child: Icon(
                   meta.icon,
                   size: 80,
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                 ),
               ),
               // Content
@@ -2273,7 +3053,7 @@ class _CategoryCard extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(meta.icon, color: Colors.white, size: 22),
@@ -2295,7 +3075,7 @@ class _CategoryCard extends StatelessWidget {
                         Text(
                           '$count wallpaper${count == 1 ? '' : 's'}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.75),
+                            color: Colors.white.withValues(alpha: 0.75),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -2313,25 +3093,360 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-// ─── Tab 3: Favourites ────────────────────────────────────────────────────────
+// ─── Tab: Ringtones ───────────────────────────────────────────────────────────
 
-class _FavoritesTab extends StatelessWidget {
-  final List<Wallpaper> wallpapers;
+class _RingtonesTab extends StatefulWidget {
+  final List<Ringtone> ringtones;
   final List<String> favorites;
+  final bool isLoading;
+  final bool isAdmin;
   final Future<void> Function() onRefresh;
   final ValueChanged<List<String>> onFavoritesChanged;
 
-  const _FavoritesTab({
-    required this.wallpapers,
+  const _RingtonesTab({
+    required this.ringtones,
     required this.favorites,
+    required this.isLoading,
+    required this.isAdmin,
     required this.onRefresh,
     required this.onFavoritesChanged,
   });
 
   @override
+  State<_RingtonesTab> createState() => _RingtonesTabState();
+}
+
+class _RingtonesTabState extends State<_RingtonesTab> {
+  String query = '';
+  String selectedCategory = 'All';
+  final AudioPlayer _previewPlayer = AudioPlayer();
+  String? _playingUrl;
+
+  @override
+  void dispose() {
+    _previewPlayer.dispose();
+    super.dispose();
+  }
+
+  List<String> get categories {
+    final extra = widget.ringtones
+        .map((r) => r.category)
+        .where((c) => !ringtoneCategories.contains(c))
+        .toSet()
+        .toList()
+      ..sort();
+    return ['All', ...ringtoneCategories, ...extra];
+  }
+
+  List<Ringtone> get filtered {
+    return widget.ringtones.where((r) {
+      final matchQ = r.title.toLowerCase().contains(query.toLowerCase());
+      final matchC = selectedCategory == 'All' || r.category == selectedCategory;
+      return matchQ && matchC;
+    }).toList();
+  }
+
+  Future<void> _togglePreview(Ringtone r) async {
+    HapticFeedback.lightImpact();
+    if (_playingUrl == r.audioUrl) {
+      await _previewPlayer.stop();
+      setState(() => _playingUrl = null);
+      return;
+    }
+    if (r.audioUrl.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This ringtone has no audio file linked')),
+        );
+      }
+      return;
+    }
+    try {
+      await _previewPlayer.stop();
+      setState(() => _playingUrl = r.audioUrl);
+      await _previewPlayer.setUrl(r.audioUrl);
+      await _previewPlayer.play();
+      _previewPlayer.playerStateStream.listen((state) {
+        if (state.processingState == ProcessingState.completed && mounted) {
+          setState(() => _playingUrl = null);
+        }
+      });
+    } catch (e) {
+      debugPrint('Ringtone preview failed: $e');
+      if (mounted) {
+        setState(() => _playingUrl = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not play: ${e.toString().split('\n').first}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite(Ringtone r) async {
+    final favs = List<String>.from(widget.favorites);
+    if (favs.contains(r.audioUrl)) {
+      favs.remove(r.audioUrl);
+    } else {
+      favs.add(r.audioUrl);
+      HapticFeedback.mediumImpact();
+    }
+    await AppData.saveStringList('ringtoneFavorites', favs);
+    widget.onFavoritesChanged(favs);
+  }
+
+  void openPreview(Ringtone r) async {
+    await _previewPlayer.stop();
+    if (mounted) setState(() => _playingUrl = null);
+    if (!mounted) return;
+    Navigator.push(context, smoothRoute(RingtonePreviewScreen(ringtone: r)))
+        .then((_) => widget.onRefresh());
+  }
+
+  void openAdmin() {
+    Navigator.push(context, smoothRoute(const AdminRingtoneScreen()))
+        .then((_) => widget.onRefresh());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final favWallpapers = wallpapers.where((w) => favorites.contains(w.image)).toList();
+    final visible = filtered;
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 12, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Ringtones', style: TextStyle(
+                    fontSize: 26, fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : const Color(0xFF111827),
+                  )),
+                ),
+                if (widget.isAdmin)
+                  IconButton(
+                    tooltip: 'Add ringtone',
+                    onPressed: openAdmin,
+                    icon: const Icon(Icons.add_circle_outline_rounded, color: premiumCyan),
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Text('${widget.ringtones.length} ringtones available',
+              style: TextStyle(color: isDark ? Colors.white38 : Colors.black38,
+                  fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: premiumCyan.withValues(alpha: 0.2)),
+              ),
+              child: TextField(
+                onChanged: (v) => setState(() => query = v),
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF111827)),
+                decoration: InputDecoration(
+                  hintText: 'Search ringtones…',
+                  hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                  prefixIcon: const Icon(Icons.search_rounded, color: premiumCyan),
+                  suffixIcon: query.isEmpty ? null : IconButton(
+                    onPressed: () => setState(() => query = ''),
+                    icon: Icon(Icons.close_rounded, color: isDark ? Colors.white54 : Colors.black45),
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final cat = categories[i];
+                return CategoryPill(
+                  label: cat,
+                  selected: selectedCategory == cat,
+                  onTap: () => setState(() => selectedCategory = cat),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: widget.onRefresh,
+              color: premiumCyan,
+              child: widget.isLoading
+                  ? const Center(child: CircularProgressIndicator(color: premiumCyan))
+                  : visible.isEmpty
+                      ? Center(
+                          child: Text('No ringtones found',
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black45, fontWeight: FontWeight.w600)),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          itemCount: visible.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, idx) {
+                            final r = visible[idx];
+                            return RingtoneTile(
+                              ringtone: r,
+                              isFavorite: widget.favorites.contains(r.audioUrl),
+                              isPlaying: _playingUrl == r.audioUrl,
+                              onPlayToggle: () => _togglePreview(r),
+                              onFavoriteToggle: () => _toggleFavorite(r),
+                              onTap: () => openPreview(r),
+                            );
+                          },
+                        ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RingtoneTile extends StatelessWidget {
+  final Ringtone ringtone;
+  final bool isFavorite;
+  final bool isPlaying;
+  final VoidCallback? onPlayToggle;
+  final VoidCallback onFavoriteToggle;
+  final VoidCallback onTap;
+
+  const RingtoneTile({
+    super.key,
+    required this.ringtone,
+    required this.isFavorite,
+    this.isPlaying = false,
+    this.onPlayToggle,
+    required this.onFavoriteToggle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isPlaying ? premiumCyan.withValues(alpha: 0.5) : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+          ),
+          boxShadow: isPlaying ? [BoxShadow(color: premiumCyan.withValues(alpha: 0.18), blurRadius: 16)] : null,
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onPlayToggle,
+              child: Container(
+                width: 46, height: 46,
+                decoration: BoxDecoration(
+                  gradient: premiumGradient,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.3), blurRadius: 12)],
+                ),
+                child: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 24),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(ringtone.title,
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF111827))),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(Icons.label_rounded, size: 12, color: isDark ? Colors.white38 : Colors.black38),
+                      const SizedBox(width: 4),
+                      Text(ringtone.category, style: TextStyle(
+                        fontSize: 12, color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: onFavoriteToggle,
+              icon: Icon(
+                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isFavorite ? premiumPink : (isDark ? Colors.white38 : Colors.black38),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Tab 3: Favourites ────────────────────────────────────────────────────────
+
+class _FavoritesTab extends StatefulWidget {
+  final List<Wallpaper> wallpapers;
+  final List<String> favorites;
+  final List<Ringtone> ringtones;
+  final List<String> ringtoneFavorites;
+  final Future<void> Function() onRefresh;
+  final ValueChanged<List<String>> onFavoritesChanged;
+  final ValueChanged<List<String>> onRingtoneFavoritesChanged;
+
+  const _FavoritesTab({
+    required this.wallpapers,
+    required this.favorites,
+    required this.ringtones,
+    required this.ringtoneFavorites,
+    required this.onRefresh,
+    required this.onFavoritesChanged,
+    required this.onRingtoneFavoritesChanged,
+  });
+
+  @override
+  State<_FavoritesTab> createState() => _FavoritesTabState();
+}
+
+class _FavoritesTabState extends State<_FavoritesTab> {
+  int _segment = 0; // 0 = wallpapers, 1 = ringtones
+
+  Future<void> _toggleRingtoneFavorite(Ringtone r) async {
+    final favs = List<String>.from(widget.ringtoneFavorites);
+    if (favs.contains(r.audioUrl)) {
+      favs.remove(r.audioUrl);
+    } else {
+      favs.add(r.audioUrl);
+    }
+    await AppData.saveStringList('ringtoneFavorites', favs);
+    widget.onRingtoneFavoritesChanged(favs);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final favWallpapers = widget.wallpapers.where((w) => widget.favorites.contains(w.image)).toList();
+    final favRingtones = widget.ringtones.where((r) => widget.ringtoneFavorites.contains(r.audioUrl)).toList();
 
     return SafeArea(
       child: Column(
@@ -2348,78 +3463,168 @@ class _FavoritesTab extends StatelessWidget {
               ),
             ),
           ),
+          // ── Segment control ──────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-            child: Text(
-              '${favWallpapers.length} saved wallpapers',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _SegmentButton(
+                      label: 'Wallpapers (${favWallpapers.length})',
+                      icon: Icons.image_rounded,
+                      selected: _segment == 0,
+                      isDark: isDark,
+                      onTap: () => setState(() => _segment = 0),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SegmentButton(
+                      label: 'Ringtones (${favRingtones.length})',
+                      icon: Icons.music_note_rounded,
+                      selected: _segment == 1,
+                      isDark: isDark,
+                      onTap: () => setState(() => _segment = 1),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+          const SizedBox(height: 8),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: onRefresh,
-              color: premiumCyan,
-              child: favWallpapers.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.favorite_border_rounded,
-                              size: 64, color: isDark ? Colors.white24 : Colors.black12),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No favourites yet',
-                            style: TextStyle(
-                              color: isDark ? Colors.white38 : Colors.black38,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
+            child: _segment == 0
+                ? RefreshIndicator(
+                    onRefresh: widget.onRefresh,
+                    color: premiumCyan,
+                    child: favWallpapers.isEmpty
+                        ? _emptyState(isDark, Icons.favorite_border_rounded, 'No favourite wallpapers',
+                            'Tap ♥ on any wallpaper to save it here')
+                        : LayoutBuilder(builder: (ctx, constraints) {
+                            final cols = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 620 ? 3 : 2;
+                            return GridView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              itemCount: favWallpapers.length,
+                              cacheExtent: 900,
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: cols,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 14,
+                                childAspectRatio: 0.68,
+                              ),
+                              itemBuilder: (_, idx) {
+                                final w = favWallpapers[idx];
+                                return WallpaperTile(
+                                  wallpaper: w,
+                                  isFavorite: true,
+                                  animationIndex: idx,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    smoothRoute(PreviewScreen(wallpaper: w)),
+                                  ).then((_) => widget.onRefresh()),
+                                );
+                              },
+                            );
+                          }),
+                  )
+                : RefreshIndicator(
+                    onRefresh: widget.onRefresh,
+                    color: premiumCyan,
+                    child: favRingtones.isEmpty
+                        ? _emptyState(isDark, Icons.music_off_rounded, 'No favourite ringtones',
+                            'Tap ♥ on any ringtone to save it here')
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                            itemCount: favRingtones.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemBuilder: (_, idx) {
+                              final r = favRingtones[idx];
+                              return RingtoneTile(
+                                ringtone: r,
+                                isFavorite: true,
+                                onFavoriteToggle: () => _toggleRingtoneFavorite(r),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  smoothRoute(RingtonePreviewScreen(ringtone: r)),
+                                ).then((_) => widget.onRefresh()),
+                              );
+                            },
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap ♥ on any wallpaper to save it here',
-                            style: TextStyle(
-                              color: isDark ? Colors.white24 : Colors.black26,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : LayoutBuilder(builder: (ctx, constraints) {
-                      final cols = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 620 ? 3 : 2;
-                      return GridView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        itemCount: favWallpapers.length,
-                        cacheExtent: 900,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: cols,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: 0.68,
-                        ),
-                        itemBuilder: (_, idx) {
-                          final w = favWallpapers[idx];
-                          return WallpaperTile(
-                            wallpaper: w,
-                            isFavorite: true,
-                            animationIndex: idx,
-                            onTap: () => Navigator.push(
-                              context,
-                              smoothRoute(PreviewScreen(wallpaper: w)),
-                            ).then((_) => onRefresh()),
-                          );
-                        },
-                      );
-                    }),
-            ),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _emptyState(bool isDark, IconData icon, String title, String subtitle) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 64, color: isDark ? Colors.white24 : Colors.black12),
+          const SizedBox(height: 16),
+          Text(title, style: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black38,
+            fontWeight: FontWeight.w600, fontSize: 16,
+          )),
+          const SizedBox(height: 8),
+          Text(subtitle, style: TextStyle(
+            color: isDark ? Colors.white24 : Colors.black26, fontSize: 13,
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SegmentButton({
+    required this.label, required this.icon, required this.selected,
+    required this.isDark, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? premiumCyan.withValues(alpha: 0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: selected ? Border.all(color: premiumCyan.withValues(alpha: 0.4)) : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: selected ? premiumCyan : (isDark ? Colors.white54 : Colors.black45)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w800,
+                  color: selected ? premiumCyan : (isDark ? Colors.white54 : Colors.black45),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2460,7 +3665,7 @@ class _ProfileTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: premiumCyan.withOpacity(0.18),
+                  backgroundColor: premiumCyan.withValues(alpha: 0.18),
                   backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
                   child: photoUrl == null
                       ? Text(
@@ -2625,9 +3830,9 @@ class _SettingsTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
       ),
       child: ListTile(
         leading: Icon(icon, color: color, size: 22),
@@ -2645,6 +3850,7 @@ class WallpaperTile extends StatelessWidget {
   final bool isFavorite;
   final int animationIndex;
   final VoidCallback onTap;
+  final bool isNew;
 
   const WallpaperTile({
     super.key,
@@ -2652,6 +3858,7 @@ class WallpaperTile extends StatelessWidget {
     required this.isFavorite,
     this.animationIndex = 0,
     required this.onTap,
+    this.isNew = false,
   });
 
   @override
@@ -2679,7 +3886,7 @@ class WallpaperTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.30),
+              color: Colors.black.withValues(alpha: 0.30),
               blurRadius: 14,
               offset: const Offset(0, 8),
             ),
@@ -2689,7 +3896,10 @@ class WallpaperTile extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
-            onTap: onTap,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
               child: Stack(
@@ -2702,12 +3912,7 @@ class WallpaperTile extends StatelessWidget {
                       fit: BoxFit.cover,
                       cacheWidth: 520,
                       filterQuality: FilterQuality.medium,
-                      frameBuilder: (
-                        context,
-                        child,
-                        frame,
-                        wasSynchronouslyLoaded,
-                      ) {
+                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                         if (wasSynchronouslyLoaded) return child;
                         return AnimatedOpacity(
                           opacity: frame == null ? 0 : 1,
@@ -2728,7 +3933,7 @@ class WallpaperTile extends StatelessWidget {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: premiumCyan.withOpacity(0.9),
+                                  color: premiumCyan.withValues(alpha: 0.9),
                                 ),
                               ),
                             ),
@@ -2749,37 +3954,52 @@ class WallpaperTile extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.05),
-                          Colors.black.withOpacity(0.12),
-                          Colors.black.withOpacity(0.86),
+                          Colors.black.withValues(alpha: 0.05),
+                          Colors.black.withValues(alpha: 0.12),
+                          Colors.black.withValues(alpha: 0.86),
                         ],
                       ),
                     ),
                   ),
+                  // NEW badge
+                  if (isNew)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors: [premiumCyan, premiumViolet]),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Favourite button
                   Positioned(
                     top: 10,
                     right: 10,
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.32),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.14),
-                        ),
+                        color: Colors.black.withValues(alpha: 0.32),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                         shape: BoxShape.circle,
                       ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 160),
-                        transitionBuilder: (child, animation) {
-                          return ScaleTransition(
-                            scale: animation,
-                            child: child,
-                          );
-                        },
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
                         child: Icon(
-                          isFavorite
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border,
+                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border,
                           key: ValueKey(isFavorite),
                           size: 19,
                           color: isFavorite ? Colors.redAccent : Colors.white,
@@ -2794,10 +4014,8 @@ class WallpaperTile extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.42),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.10),
-                        ),
+                        color: Colors.black.withValues(alpha: 0.42),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -2818,11 +4036,7 @@ class WallpaperTile extends StatelessWidget {
                           const SizedBox(height: 5),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.auto_awesome_rounded,
-                                color: premiumCyan,
-                                size: 13,
-                              ),
+                              const Icon(Icons.auto_awesome_rounded, color: premiumCyan, size: 13),
                               const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
@@ -2851,7 +4065,6 @@ class WallpaperTile extends StatelessWidget {
     );
   }
 }
-
 class WallpaperListScreen extends StatelessWidget {
   final String title;
   final List<Wallpaper> wallpapers;
@@ -2922,11 +4135,19 @@ class PreviewScreen extends StatefulWidget {
 class _PreviewScreenState extends State<PreviewScreen> {
   bool isFavorite = false;
   bool isLoading = false;
+  double _downloadProgress = 0;
+  final TransformationController _zoomController = TransformationController();
 
   @override
   void initState() {
     super.initState();
     checkFavorite();
+  }
+
+  @override
+  void dispose() {
+    _zoomController.dispose();
+    super.dispose();
   }
 
   Future<void> checkFavorite() async {
@@ -2936,14 +4157,13 @@ class _PreviewScreenState extends State<PreviewScreen> {
   }
 
   Future<void> toggleFavorite() async {
+    HapticFeedback.mediumImpact();
     final favorites = await AppData.getStringList('favorites');
-
     if (favorites.contains(widget.wallpaper.image)) {
       favorites.remove(widget.wallpaper.image);
     } else {
       favorites.add(widget.wallpaper.image);
     }
-
     await AppData.saveStringList('favorites', favorites);
     if (!mounted) return;
     setState(() => isFavorite = favorites.contains(widget.wallpaper.image));
@@ -2951,7 +4171,12 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
   void showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: premiumPanel,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 
@@ -2959,10 +4184,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Gallery permission denied'),
-        action: SnackBarAction(
-          label: 'Settings',
-          onPressed: openAppSettings,
-        ),
+        action: SnackBarAction(label: 'Settings', onPressed: openAppSettings),
       ),
     );
   }
@@ -2973,9 +4195,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '')
         .toLowerCase();
-    return safeName.isEmpty
-        ? 'rxt_gaming_wallpaper'
-        : 'rxt_gaming_$safeName';
+    return safeName.isEmpty ? 'rxt_gaming_wallpaper' : 'rxt_gaming_$safeName';
   }
 
   Future<File> downloadWallpaper() async {
@@ -2984,7 +4204,15 @@ class _PreviewScreenState extends State<PreviewScreen> {
     final file = File(filePath);
 
     if (!await file.exists()) {
-      await Dio().download(widget.wallpaper.image, filePath);
+      await Dio().download(
+        widget.wallpaper.image,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0 && mounted) {
+            setState(() => _downloadProgress = received / total);
+          }
+        },
+      );
     }
 
     final history = await AppData.getStringList('history');
@@ -2992,169 +4220,158 @@ class _PreviewScreenState extends State<PreviewScreen> {
       history.add(widget.wallpaper.image);
       await AppData.saveStringList('history', history);
     }
-
     return file;
   }
 
   Future<String> saveFileToPhoneDownloads(File sourceFile) async {
     final fileName = '$safeWallpaperName.jpg';
-
     if (Platform.isAndroid) {
       try {
         final savedPath = await downloadsChannel.invokeMethod<String>(
           'saveImageToDownloads',
-          {
-            'sourcePath': sourceFile.path,
-            'fileName': fileName,
-          },
+          {'sourcePath': sourceFile.path, 'fileName': fileName},
         );
-        if (savedPath != null && savedPath.isNotEmpty) {
-          return savedPath;
-        }
+        if (savedPath != null && savedPath.isNotEmpty) return savedPath;
       } on PlatformException catch (e) {
         debugPrint('Android downloads save failed: ${e.message}');
       }
     }
-
     final downloadsDirectory = await getDownloadsDirectory();
     final targetDirectory = downloadsDirectory != null
         ? Directory('${downloadsDirectory.path}/RXT Gaming')
         : await getApplicationDocumentsDirectory();
-    if (!await targetDirectory.exists()) {
-      await targetDirectory.create(recursive: true);
-    }
-
+    if (!await targetDirectory.exists()) await targetDirectory.create(recursive: true);
     final targetPath = '${targetDirectory.path}/$fileName';
     await sourceFile.copy(targetPath);
     return targetPath;
   }
 
   Future<void> downloadOnly() async {
+    HapticFeedback.lightImpact();
     try {
-      setState(() => isLoading = true);
+      setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
       final savedPath = await saveFileToPhoneDownloads(file);
       if (!mounted) return;
-      showMessage('Downloaded to Files: $savedPath');
+      // Increment download counter
+      final prefs = await SharedPreferences.getInstance();
+      final count = (prefs.getInt('total_downloads') ?? 0) + 1;
+      await prefs.setInt('total_downloads', count);
+      HapticFeedback.heavyImpact();
+      showMessage('Downloaded ✓');
+      debugPrint('Saved to: $savedPath');
+      if (mounted) maybeShowRateUs(context);
     } catch (_) {
-      if (mounted) {
-        showMessage('Download failed');
-      }
+      if (mounted) showMessage('Download failed');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() { isLoading = false; _downloadProgress = 0; });
     }
   }
 
   Future<bool> requestGalleryAccess() async {
     try {
-      if (await Gal.hasAccess(toAlbum: true)) {
-        return true;
-      }
-
+      if (await Gal.hasAccess(toAlbum: true)) return true;
       return Gal.requestAccess(toAlbum: true);
-    } catch (_) {
-      return false;
-    }
+    } catch (_) { return false; }
   }
 
   Future<void> saveToGallery() async {
+    HapticFeedback.lightImpact();
     try {
-      setState(() => isLoading = true);
-
+      setState(() { isLoading = true; _downloadProgress = 0; });
       final hasAccess = await requestGalleryAccess();
       if (!hasAccess) {
-        if (mounted) {
-          showGalleryPermissionMessage();
-        }
+        if (mounted) showGalleryPermissionMessage();
         return;
       }
-
       final file = await downloadWallpaper();
       await Gal.putImage(file.path, album: 'Gaming Wallpapers');
-
       if (!mounted) return;
-      showMessage('Saved to gallery');
+      HapticFeedback.heavyImpact();
+      showMessage('Saved to Gallery ✓');
     } on GalException catch (e) {
-      if (mounted) {
-        showMessage(e.type.message);
-      }
+      if (mounted) showMessage(e.type.message);
     } catch (_) {
-      if (mounted) {
-        showMessage('Gallery save failed');
-      }
+      if (mounted) showMessage('Gallery save failed');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() { isLoading = false; _downloadProgress = 0; });
     }
   }
 
   Future<void> shareWallpaper() async {
+    HapticFeedback.lightImpact();
     try {
-      setState(() => isLoading = true);
+      setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: widget.wallpaper.title,
-      );
+      await Share.shareXFiles([XFile(file.path)], text: widget.wallpaper.title);
     } catch (_) {
-      if (mounted) {
-        showMessage('Share failed');
-      }
+      if (mounted) showMessage('Share failed');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() { isLoading = false; _downloadProgress = 0; });
     }
   }
 
   Future<void> setWallpaper(int location) async {
+    HapticFeedback.lightImpact();
     try {
-      setState(() => isLoading = true);
+      setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
       final manager = WallpaperManagerFlutter();
       final success = await manager.setWallpaper(file, location);
       if (!mounted) return;
-      showMessage(success ? 'Wallpaper set successfully' : 'Wallpaper not set');
+      if (success) HapticFeedback.heavyImpact();
+      showMessage(success ? 'Wallpaper set ✓' : 'Wallpaper not set');
     } catch (_) {
-      if (mounted) {
-        showMessage('Set wallpaper failed');
-      }
+      if (mounted) showMessage('Set wallpaper failed');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() { isLoading = false; _downloadProgress = 0; });
     }
   }
 
   void openWallpaperOptions() {
+    HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
-      builder: (_) {
-        return SafeArea(
+      backgroundColor: premiumPanel,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              optionButton('Home Screen', WallpaperManagerFlutter.homeScreen),
-              optionButton('Lock Screen', WallpaperManagerFlutter.lockScreen),
-              optionButton('Both Screens', WallpaperManagerFlutter.bothScreens),
+              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+              const Text('Set Wallpaper',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+              const SizedBox(height: 16),
+              _wallpaperOptionTile(Icons.home_rounded, 'Home Screen', WallpaperManagerFlutter.homeScreen),
+              _wallpaperOptionTile(Icons.lock_rounded, 'Lock Screen', WallpaperManagerFlutter.lockScreen),
+              _wallpaperOptionTile(Icons.smartphone_rounded, 'Both Screens', WallpaperManagerFlutter.bothScreens),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget optionButton(String text, int location) {
-    return ListTile(
-      title: Text(text),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () {
-        Navigator.pop(context);
-        setWallpaper(location);
-      },
+  Widget _wallpaperOptionTile(IconData icon, String label, int location) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: premiumCyan),
+        title: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+        onTap: () { Navigator.pop(context); setWallpaper(location); },
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 
@@ -3165,44 +4382,45 @@ class _PreviewScreenState extends State<PreviewScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Hero(
-            tag: 'wallpaper-${widget.wallpaper.image}',
-            child: Image.network(
-              widget.wallpaper.image,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.medium,
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                if (wasSynchronouslyLoaded) return child;
-                return AnimatedOpacity(
-                  opacity: frame == null ? 0 : 1,
-                  duration: const Duration(milliseconds: 360),
-                  curve: Curves.easeOut,
-                  child: child,
-                );
-              },
-              errorBuilder: (_, __, ___) {
-                return const ColoredBox(
+          // Pinch-to-zoom image
+          InteractiveViewer(
+            transformationController: _zoomController,
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: Hero(
+              tag: 'wallpaper-${widget.wallpaper.image}',
+              child: Image.network(
+                widget.wallpaper.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                filterQuality: FilterQuality.high,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOut,
+                    child: child,
+                  );
+                },
+                errorBuilder: (_, __, ___) => const ColoredBox(
                   color: Colors.black,
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image_rounded,
-                      color: Colors.white,
-                      size: 64,
-                    ),
-                  ),
-                );
-              },
+                  child: Center(child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64)),
+                ),
+              ),
             ),
           ),
+          // Gradient overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.5),
+                  Colors.black.withValues(alpha: 0.5),
                   Colors.transparent,
-                  Colors.black.withOpacity(0.88),
+                  Colors.black.withValues(alpha: 0.88),
                 ],
               ),
             ),
@@ -3212,6 +4430,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
               padding: const EdgeInsets.all(18),
               child: Column(
                 children: [
+                  // Top bar
                   Row(
                     children: [
                       _glassIconButton(
@@ -3219,10 +4438,26 @@ class _PreviewScreenState extends State<PreviewScreen> {
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Spacer(),
+                      // Zoom reset button (shows when zoomed in)
+                      ValueListenableBuilder<Matrix4>(
+                        valueListenable: _zoomController,
+                        builder: (_, matrix, __) {
+                          final isZoomed = matrix != Matrix4.identity();
+                          return AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity: isZoomed ? 1 : 0,
+                            child: _glassIconButton(
+                              icon: Icons.zoom_out_map_rounded,
+                              onPressed: isZoomed
+                                  ? () => _zoomController.value = Matrix4.identity()
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
                       _glassIconButton(
-                        icon: isFavorite
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
+                        icon: isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                         onPressed: isLoading ? null : toggleFavorite,
                         color: isFavorite ? Colors.redAccent : Colors.white,
                       ),
@@ -3234,6 +4469,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                     ],
                   ),
                   const Spacer(),
+                  // Bottom card
                   ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: BackdropFilter(
@@ -3242,14 +4478,12 @@ class _PreviewScreenState extends State<PreviewScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.32),
+                          color: Colors.black.withValues(alpha: 0.32),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.14),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
+                              color: Colors.black.withValues(alpha: 0.35),
                               blurRadius: 28,
                               offset: const Offset(0, 18),
                             ),
@@ -3262,40 +4496,59 @@ class _PreviewScreenState extends State<PreviewScreen> {
                             Text(
                               widget.wallpaper.title,
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 29,
-                                height: 1.05,
-                                fontWeight: FontWeight.w900,
+                                color: Colors.white, fontSize: 29,
+                                height: 1.05, fontWeight: FontWeight.w900,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.auto_awesome_rounded,
-                                  color: premiumCyan,
-                                  size: 16,
-                                ),
+                                const Icon(Icons.auto_awesome_rounded, color: premiumCyan, size: 16),
                                 const SizedBox(width: 6),
                                 Text(
                                   widget.wallpaper.category,
                                   style: const TextStyle(
-                                    color: Color(0xFFB9F6FF),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFB9F6FF), fontSize: 14, fontWeight: FontWeight.w800,
                                   ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(Icons.zoom_in_rounded, color: Colors.white38, size: 14),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Pinch to zoom',
+                                  style: TextStyle(color: Colors.white38, fontSize: 12),
                                 ),
                               ],
                             ),
+                            // Download progress bar
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 220),
                               child: isLoading
-                                  ? const Padding(
-                                      padding: EdgeInsets.only(top: 16),
-                                      child: LinearProgressIndicator(
-                                        minHeight: 3,
-                                        color: premiumCyan,
-                                        backgroundColor: Colors.white24,
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 14, bottom: 2),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('Downloading…',
+                                                style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                              Text('${(_downloadProgress * 100).toInt()}%',
+                                                style: const TextStyle(color: premiumCyan, fontSize: 12, fontWeight: FontWeight.w700)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: _downloadProgress > 0 ? _downloadProgress : null,
+                                              minHeight: 4,
+                                              color: premiumCyan,
+                                              backgroundColor: Colors.white24,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     )
                                   : const SizedBox(height: 16),
@@ -3306,8 +4559,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                   child: PremiumActionButton(
                                     icon: Icons.wallpaper_rounded,
                                     label: 'Set',
-                                    onPressed:
-                                        isLoading ? null : openWallpaperOptions,
+                                    onPressed: isLoading ? null : openWallpaperOptions,
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -3355,9 +4607,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.24),
+            color: Colors.black.withValues(alpha: 0.24),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           child: IconButton(
             onPressed: onPressed,
@@ -3657,15 +4909,15 @@ class LiveWallpaperCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colors[0].withOpacity(0.22),
+            colors[0].withValues(alpha: 0.22),
             const Color(0xFF080B16),
-            colors[1].withOpacity(0.28),
+            colors[1].withValues(alpha: 0.28),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-            color: colors[0].withOpacity(0.18),
+            color: colors[0].withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -3699,7 +4951,7 @@ class LiveWallpaperCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
+                    color: Colors.white.withValues(alpha: 0.68),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -3754,7 +5006,7 @@ class LiveWallpaperPreviewPainter extends CustomPainter {
       }
 
       paint
-        ..color = colors[line].withOpacity(0.82)
+        ..color = colors[line].withValues(alpha: 0.82)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
       canvas.drawPath(path, paint);
       paint.maskFilter = null;
@@ -4014,9 +5266,9 @@ class _LiveWallpaperSetPreviewScreenState
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.25),
+                  Colors.black.withValues(alpha: 0.25),
                   Colors.transparent,
-                  Colors.black.withOpacity(0.82),
+                  Colors.black.withValues(alpha: 0.82),
                 ],
               ),
             ),
@@ -4033,7 +5285,7 @@ class _LiveWallpaperSetPreviewScreenState
                         ? 'MP4 preview is using selected file'
                         : 'Neon preview',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.72),
+                      color: Colors.white.withValues(alpha: 0.72),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -4425,3 +5677,538 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 }
 
+
+// ─── Admin: Add Ringtone ──────────────────────────────────────────────────────
+
+class AdminRingtoneScreen extends StatefulWidget {
+  const AdminRingtoneScreen({super.key});
+
+  @override
+  State<AdminRingtoneScreen> createState() => _AdminRingtoneScreenState();
+}
+
+class _AdminRingtoneScreenState extends State<AdminRingtoneScreen> {
+  final titleController = TextEditingController();
+  final audioController = TextEditingController();
+  final coverController = TextEditingController();
+  String selectedCategory = ringtoneCategories.first;
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    audioController.dispose();
+    coverController.dispose();
+    super.dispose();
+  }
+
+  Future<void> addRingtone() async {
+    if (!isAdminEmail(FirebaseAuth.instance.currentUser?.email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only admin can upload ringtones')),
+      );
+      return;
+    }
+
+    final title = titleController.text.trim();
+    final audioUrl = audioController.text.trim();
+    final coverImage = coverController.text.trim();
+    final category = selectedCategory;
+
+    if (title.isEmpty || audioUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fill title and audio URL')),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(audioUrl);
+    final isValidUrl = uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    if (!isValidUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid audio URL (.mp3)')),
+      );
+      return;
+    }
+
+    final ringtone = Ringtone(
+      title: title,
+      audioUrl: audioUrl,
+      category: category,
+      coverImage: coverImage,
+    );
+
+    try {
+      setState(() => isLoading = true);
+      await AppData.addRingtone(ringtone);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ringtone added')),
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      await AppData.addLocalRingtone(ringtone);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saved locally')),
+      );
+      Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  InputDecoration inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      prefixIcon: Icon(icon),
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isAdminEmail(FirebaseAuth.instance.currentUser?.email)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Admin')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('Only admin can upload ringtones', textAlign: TextAlign.center),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Add Ringtone')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: inputDecoration('Title', Icons.title),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: audioController,
+              keyboardType: TextInputType.url,
+              decoration: inputDecoration('Audio URL (.mp3)', Icons.audiotrack_rounded),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: coverController,
+              keyboardType: TextInputType.url,
+              decoration: inputDecoration('Cover Image URL (optional)', Icons.image_rounded),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: selectedCategory,
+              decoration: inputDecoration('Category', Icons.category),
+              items: ringtoneCategories.map((category) {
+                return DropdownMenuItem(value: category, child: Text(category));
+              }).toList(),
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() => selectedCategory = value);
+                    },
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : addRingtone,
+                icon: isLoading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.add),
+                label: const Text('Add Ringtone'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Ringtone Preview Screen ──────────────────────────────────────────────────
+
+class RingtonePreviewScreen extends StatefulWidget {
+  final Ringtone ringtone;
+  const RingtonePreviewScreen({super.key, required this.ringtone});
+
+  @override
+  State<RingtonePreviewScreen> createState() => _RingtonePreviewScreenState();
+}
+
+class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with WidgetsBindingObserver {
+  final AudioPlayer _player = AudioPlayer();
+  bool isPlaying = false;
+  bool isLoadingAudio = true;
+  bool isFavorite = false;
+  bool isBusy = false;
+  bool _pendingRingtoneRetry = false;
+  Duration position = Duration.zero;
+  Duration totalDuration = Duration.zero;
+  StreamSubscription<Duration>? _posSub;
+  StreamSubscription<PlayerState>? _stateSub;
+
+  String get safeName => widget.ringtone.title.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadFavoriteStatus();
+    _initPlayer();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // User came back from the system "Modify system settings" screen.
+    if (state == AppLifecycleState.resumed && _pendingRingtoneRetry) {
+      _pendingRingtoneRetry = false;
+      // Small delay so Android finishes applying the permission state.
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _setAsRingtone(isRetry: true);
+      });
+    }
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final favs = await AppData.getStringList('ringtoneFavorites');
+    if (mounted) setState(() => isFavorite = favs.contains(widget.ringtone.audioUrl));
+  }
+
+  Future<void> _initPlayer() async {
+    try {
+      // Attach listeners BEFORE play() so no state events are missed.
+      _posSub = _player.positionStream.listen((p) {
+        if (mounted) setState(() => position = p);
+      });
+      _stateSub = _player.playerStateStream.listen((state) {
+        if (!mounted) return;
+        setState(() => isPlaying = state.playing);
+        if (state.processingState == ProcessingState.completed) {
+          setState(() { isPlaying = false; position = Duration.zero; });
+          _player.seek(Duration.zero);
+        }
+      });
+
+      await _player.setUrl(widget.ringtone.audioUrl);
+      totalDuration = _player.duration ?? Duration.zero;
+      if (mounted) setState(() => isLoadingAudio = false);
+      await _player.play();
+      if (mounted) setState(() => isPlaying = true);
+    } catch (e) {
+      debugPrint('Ringtone load failed: $e');
+      if (mounted) setState(() => isLoadingAudio = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _posSub?.cancel();
+    _stateSub?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
+
+  void _togglePlay() {
+    HapticFeedback.lightImpact();
+    if (isPlaying) {
+      setState(() => isPlaying = false);
+      _player.pause();
+    } else {
+      setState(() => isPlaying = true);
+      _player.play();
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    HapticFeedback.mediumImpact();
+    final favs = await AppData.getStringList('ringtoneFavorites');
+    if (favs.contains(widget.ringtone.audioUrl)) {
+      favs.remove(widget.ringtone.audioUrl);
+    } else {
+      favs.add(widget.ringtone.audioUrl);
+    }
+    await AppData.saveStringList('ringtoneFavorites', favs);
+    if (mounted) setState(() => isFavorite = favs.contains(widget.ringtone.audioUrl));
+  }
+
+  Future<File> _downloadAudio({void Function(double)? onProgress}) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final filePath = '${directory.path}/$safeName.mp3';
+    final file = File(filePath);
+    if (!await file.exists()) {
+      await Dio().download(
+        widget.ringtone.audioUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) onProgress?.call(received / total);
+        },
+      );
+    }
+    return file;
+  }
+
+  Future<void> _downloadOnly() async {
+    if (isBusy) return;
+    setState(() => isBusy = true);
+    try {
+      final file = await _downloadAudio();
+      final fileName = '$safeName.mp3';
+      String savedPath = file.path;
+      if (Platform.isAndroid) {
+        try {
+          final result = await downloadsChannel.invokeMethod<String>(
+            'saveAudioToDownloads',
+            {'sourcePath': file.path, 'fileName': fileName},
+          );
+          if (result != null && result.isNotEmpty) savedPath = result;
+        } on PlatformException catch (e) {
+          debugPrint('Audio save to downloads failed: ${e.message}');
+        }
+      }
+      debugPrint('Saved ringtone to: $savedPath');
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloaded ✓')));
+    } catch (e) {
+      debugPrint('Ringtone download failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download failed')));
+      }
+    } finally {
+      if (mounted) setState(() => isBusy = false);
+    }
+  }
+
+  Future<void> _setAsRingtone({bool isRetry = false}) async {
+    if (isBusy) return;
+    setState(() => isBusy = true);
+    try {
+      final file = await _downloadAudio();
+      String status = 'failed';
+      if (Platform.isAndroid) {
+        try {
+          final result = await ringtoneChannel.invokeMethod<Map>(
+            'setRingtone',
+            {'sourcePath': file.path, 'fileName': '$safeName.mp3', 'title': widget.ringtone.title},
+          );
+          status = (result?['status'] as String?) ?? 'failed';
+        } on PlatformException catch (e) {
+          debugPrint('setRingtone failed: ${e.message}');
+        }
+      }
+      if (!mounted) return;
+
+      if (status == 'success') {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ringtone set ✓')),
+        );
+      } else if (status == 'permission_needed') {
+        // Native side has already opened the "Modify system settings" screen.
+        // Remember to retry automatically once the user comes back.
+        _pendingRingtoneRetry = true;
+        if (!isRetry) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Allow "Modify system settings" for this app, then come back'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Permission still not granted — please allow it in Settings')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not set ringtone')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Set ringtone error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to set ringtone')));
+      }
+    } finally {
+      if (mounted) setState(() => isBusy = false);
+    }
+  }
+
+  Future<void> _shareRingtone() async {
+    try {
+      final file = await _downloadAudio();
+      await Share.shareXFiles([XFile(file.path)], text: 'Check out this ringtone: ${widget.ringtone.title}');
+    } catch (e) {
+      debugPrint('Share failed: $e');
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: premiumBackground,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(widget.ringtone.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          IconButton(
+            onPressed: _toggleFavorite,
+            icon: Icon(
+              isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: isFavorite ? premiumPink : Colors.white70,
+            ),
+          ),
+          IconButton(
+            onPressed: _shareRingtone,
+            icon: const Icon(Icons.share_rounded, color: Colors.white70),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const Spacer(),
+              // ── Cover / icon ──────────────────────────────
+              Container(
+                width: 220, height: 220,
+                decoration: BoxDecoration(
+                  gradient: premiumGradient,
+                  borderRadius: BorderRadius.circular(36),
+                  boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.35), blurRadius: 50, offset: const Offset(0, 20))],
+                  image: widget.ringtone.coverImage.isNotEmpty
+                      ? DecorationImage(image: NetworkImage(widget.ringtone.coverImage), fit: BoxFit.cover)
+                      : null,
+                ),
+                child: widget.ringtone.coverImage.isEmpty
+                    ? const Icon(Icons.music_note_rounded, size: 90, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(height: 32),
+              Text(widget.ringtone.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              Text(widget.ringtone.category,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 28),
+
+              // ── Progress ──────────────────────────────────
+              if (isLoadingAudio)
+                const CircularProgressIndicator(color: premiumCyan)
+              else ...[
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 4,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                    activeTrackColor: premiumCyan,
+                    inactiveTrackColor: Colors.white24,
+                    thumbColor: premiumCyan,
+                    overlayColor: premiumCyan.withValues(alpha: 0.2),
+                  ),
+                  child: Slider(
+                    value: totalDuration.inMilliseconds > 0
+                        ? position.inMilliseconds.clamp(0, totalDuration.inMilliseconds).toDouble()
+                        : 0,
+                    max: totalDuration.inMilliseconds > 0 ? totalDuration.inMilliseconds.toDouble() : 1,
+                    onChanged: (v) => _player.seek(Duration(milliseconds: v.toInt())),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_formatDuration(position), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(_formatDuration(totalDuration), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _togglePlay,
+                  child: Container(
+                    width: 72, height: 72,
+                    decoration: BoxDecoration(
+                      gradient: premiumGradient,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.4), blurRadius: 24)],
+                    ),
+                    child: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 36),
+                  ),
+                ),
+              ],
+
+              const Spacer(),
+
+              // ── Action buttons ────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: isBusy ? null : _downloadOnly,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Download'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: premiumGradient,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [BoxShadow(color: premiumCyan.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: isBusy ? null : _setAsRingtone,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        icon: isBusy
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.music_note_rounded, color: Colors.white),
+                        label: const Text('Set as Ringtone', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
