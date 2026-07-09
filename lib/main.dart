@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -20,6 +21,9 @@ import 'package:wallpaper_manager_flutter/wallpaper_manager_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:local_auth/local_auth.dart';
+import 'screens/premium_screen.dart';
+import 'services/premium_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -28,10 +32,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await MobileAds.instance.initialize();
+  await PremiumService.instance.initialize();
   runApp(const GamingWallpaperApp());
 }
 
 const bannerAdUnitId = 'ca-app-pub-9819570141591797/8311390422';
+const interstitialAdUnitId = 'ca-app-pub-9819570141591797/9856461255';
 const adminEmail = 'ritiksharma5563@gmail.com';
 const downloadsChannel = MethodChannel('rxt_gaming/downloads');
 const liveWallpaperChannel = MethodChannel('rxt_gaming/live_wallpaper');
@@ -53,6 +59,100 @@ const premiumGradient = LinearGradient(
   end: Alignment.bottomRight,
   colors: [premiumCyan, premiumViolet, premiumPink],
 );
+
+class WallpaperInterstitialAdService {
+  WallpaperInterstitialAdService._();
+
+  static final WallpaperInterstitialAdService instance =
+      WallpaperInterstitialAdService._();
+
+  InterstitialAd? _ad;
+  bool _isLoading = false;
+  bool _isShowing = false;
+  DateTime? _lastShownAt;
+
+  bool get _canShowByCooldown {
+    final last = _lastShownAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last) >= const Duration(seconds: 60);
+  }
+
+  void preload() {
+    if (PremiumService.instance.isPremium || _isLoading || _ad != null) return;
+
+    _isLoading = true;
+    InterstitialAd.load(
+      adUnitId: interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _isLoading = false;
+          _ad = ad;
+          debugPrint('RXT interstitial loaded');
+        },
+        onAdFailedToLoad: (error) {
+          _isLoading = false;
+          _ad = null;
+          debugPrint(
+            'RXT interstitial failed: code=${error.code} domain=${error.domain} message=${error.message}',
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> showIfEligible() async {
+    if (PremiumService.instance.isPremium) return;
+    if (_isShowing || !_canShowByCooldown) {
+      preload();
+      return;
+    }
+
+    final ad = _ad;
+    if (ad == null) {
+      preload();
+      return;
+    }
+
+    final completer = Completer<void>();
+    _ad = null;
+    _isShowing = true;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (_) {
+        _lastShownAt = DateTime.now();
+        debugPrint('RXT interstitial shown');
+      },
+      onAdDismissedFullScreenContent: (dismissedAd) {
+        dismissedAd.dispose();
+        _isShowing = false;
+        preload();
+        if (!completer.isCompleted) completer.complete();
+      },
+      onAdFailedToShowFullScreenContent: (failedAd, error) {
+        failedAd.dispose();
+        _isShowing = false;
+        debugPrint('RXT interstitial show failed: ${error.message}');
+        preload();
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    ad.show();
+    return completer.future.timeout(
+      const Duration(seconds: 8),
+      onTimeout: () {
+        _isShowing = false;
+        return;
+      },
+    );
+  }
+
+  void dispose() {
+    _ad?.dispose();
+    _ad = null;
+    _isLoading = false;
+    _isShowing = false;
+  }
+}
 
 PageRouteBuilder<T> smoothRoute<T>(Widget page) {
   return PageRouteBuilder<T>(
@@ -157,6 +257,355 @@ class PremiumActionButton extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumOpenBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const PremiumOpenBanner({
+    super.key,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF101827), Color(0xFF22134A), Color(0xFF111827)],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: premiumCyan.withValues(alpha: 0.22)),
+              boxShadow: [
+                BoxShadow(
+                  color: premiumPink.withValues(alpha: 0.20),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: premiumGradient,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: premiumCyan.withValues(alpha: 0.28),
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Premium Lifetime - Rs 199',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Buy now for No Ads, Premium wallpapers and 4K access',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            height: 1.25,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: premiumCyan,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Text(
+                      'BUY',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumPosterDialog extends StatelessWidget {
+  final VoidCallback onBuy;
+
+  const PremiumPosterDialog({
+    super.key,
+    required this.onBuy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.black.withValues(alpha: 0.92),
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.topCenter,
+                    radius: 1.1,
+                    colors: [
+                      premiumViolet.withValues(alpha: 0.48),
+                      premiumBackground,
+                      Colors.black,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+                color: Colors.white70,
+              ),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 94,
+                      height: 94,
+                      decoration: BoxDecoration(
+                        gradient: premiumGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: premiumPink.withValues(alpha: 0.38),
+                            blurRadius: 42,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: Colors.white,
+                        size: 54,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Premium Lifetime',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Only Rs 199',
+                      style: TextStyle(
+                        color: premiumCyan,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const _PremiumPosterFeature(
+                      icon: Icons.block_rounded,
+                      text: 'No banner or full-screen ads',
+                    ),
+                    const _PremiumPosterFeature(
+                      icon: Icons.image_rounded,
+                      text: 'Unlock premium wallpapers',
+                    ),
+                    const _PremiumPosterFeature(
+                      icon: Icons.high_quality_rounded,
+                      text: 'Download and set 4K wallpapers',
+                    ),
+                    const SizedBox(height: 28),
+                    PremiumActionButton(
+                      icon: Icons.flash_on_rounded,
+                      label: 'Buy Premium Now',
+                      onPressed: onBuy,
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Maybe later',
+                        style: TextStyle(color: Colors.white60, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumPosterFeature extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _PremiumPosterFeature({
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: premiumCyan, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppLockedScreen extends StatelessWidget {
+  final bool isDark;
+  final bool isAuthenticating;
+  final Future<bool> Function() onUnlock;
+
+  const AppLockedScreen({
+    super.key,
+    required this.isDark,
+    required this.isAuthenticating,
+    required this.onUnlock,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: isDark ? premiumBackground : const Color(0xFFF3F4F6),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    gradient: premiumGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: premiumCyan.withValues(alpha: 0.28),
+                        blurRadius: 34,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.fingerprint_rounded,
+                    color: Colors.white,
+                    size: 52,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'App Locked',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF111827),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Use fingerprint, face unlock, PIN or pattern to continue.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.black54,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                PremiumActionButton(
+                  icon: Icons.lock_open_rounded,
+                  label: isAuthenticating ? 'Checking...' : 'Unlock App',
+                  onPressed: isAuthenticating ? null : () => onUnlock(),
+                ),
+              ],
             ),
           ),
         ),
@@ -468,11 +917,15 @@ class Wallpaper {
   final String title;
   final String image;
   final String category;
+  final bool isPremium;
+  final bool is4k;
 
   const Wallpaper({
     required this.title,
     required this.image,
     required this.category,
+    this.isPremium = false,
+    this.is4k = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -480,15 +933,24 @@ class Wallpaper {
       'title': title,
       'name': title,
       'image': image,
+      'imageUrl': image,
+      'url': image,
       'category': category,
+      'isPremium': isPremium,
+      'premium': isPremium,
+      'is4k': is4k,
+      'is4K': is4k,
     };
   }
 
   factory Wallpaper.fromJson(Map<String, dynamic> json) {
+    final quality = (json['quality'] ?? json['resolution'] ?? '').toString().toLowerCase();
     return Wallpaper(
       title: (json['title'] ?? json['name'] ?? 'Untitled').toString(),
-      image: (json['image'] ?? '').toString(),
+      image: (json['image'] ?? json['imageUrl'] ?? json['url'] ?? '').toString(),
       category: (json['category'] ?? 'Gaming').toString(),
+      isPremium: json['isPremium'] == true || json['premium'] == true,
+      is4k: json['is4k'] == true || json['is4K'] == true || quality.contains('4k'),
     );
   }
 
@@ -565,6 +1027,7 @@ class Ringtone {
   final String category;
   final String coverImage;
   final int durationSeconds;
+  final bool isPremium;
 
   const Ringtone({
     required this.title,
@@ -572,6 +1035,7 @@ class Ringtone {
     required this.category,
     this.coverImage = '',
     this.durationSeconds = 0,
+    this.isPremium = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -581,6 +1045,8 @@ class Ringtone {
       'category': category,
       'coverImage': coverImage,
       'durationSeconds': durationSeconds,
+      'isPremium': isPremium,
+      'premium': isPremium,
     };
   }
 
@@ -591,6 +1057,7 @@ class Ringtone {
       category: (json['category'] ?? 'Gaming').toString(),
       coverImage: (json['coverImage'] ?? '').toString(),
       durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
+      isPremium: json['isPremium'] == true || json['premium'] == true,
     );
   }
 
@@ -620,13 +1087,6 @@ const defaultWallpapers = [];
 
 const defaultLiveWallpapers = [
   LiveWallpaperStyle(
-    title: 'RXT Local Motion',
-    colorOne: 0xFF00E5FF,
-    colorTwo: 0xFFFF2D92,
-    colorThree: 0xFF7C4DFF,
-    videoAsset: 'assets/videos/276544.mp4',
-  ),
-  LiveWallpaperStyle(
     title: 'RXT Neon Flow',
     colorOne: 0xFF00E5FF,
     colorTwo: 0xFFFF2D92,
@@ -655,52 +1115,75 @@ const defaultLiveWallpapers = [
 class AppData {
   static Future<List<Wallpaper>> loadWallpapers() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('customWallpapers') ?? [];
-    final custom = saved.map((item) {
-      return Wallpaper.fromJson(jsonDecode(item) as Map<String, dynamic>);
-    }).where((wallpaper) {
-      return wallpaper.image.isNotEmpty;
-    }).toList();
+    if (prefs.containsKey('customWallpapers')) {
+      await prefs.remove('customWallpapers');
+      debugPrint('RXT loadWallpapers: cleared old local custom wallpapers');
+    }
 
     final firestoreWallpapers = <Wallpaper>[];
     try {
+
       final snapshot =
           await FirebaseFirestore.instance.collection('wallpapers').get();
+
+      debugPrint('RXT loadWallpapers: fetched ${snapshot.docs.length} docs from Firestore');
 
       for (final doc in snapshot.docs) {
         final wallpaper = Wallpaper.fromFirestore(doc);
         if (wallpaper.image.isNotEmpty) {
           firestoreWallpapers.add(wallpaper);
+        } else {
+          debugPrint('RXT loadWallpapers: skipped doc ${doc.id} - empty image field');
         }
       }
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('RXT loadWallpapers: Firestore fetch FAILED -> $e');
+      debugPrint('RXT loadWallpapers stack: $stack');
       // Local/default wallpapers still keep the app usable if Firestore fails.
     }
+
+    debugPrint('RXT loadWallpapers: firestore=${firestoreWallpapers.length} default=${defaultWallpapers.length}');
 
     final byImage = <String, Wallpaper>{};
     for (final wallpaper in [
       ...firestoreWallpapers,
       ...defaultWallpapers,
-      ...custom,
     ]) {
       byImage[wallpaper.image] = wallpaper;
     }
 
+    debugPrint('RXT loadWallpapers: total unique = ${byImage.length}');
+
     return byImage.values.toList();
   }
 
-  static Future<void> addWallpaper(Wallpaper wallpaper) async {
-    await FirebaseFirestore.instance.collection('wallpapers').add({
+  static Future<String> addWallpaper(Wallpaper wallpaper) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final docRef = await FirebaseFirestore.instance.collection('wallpapers').add({
       ...wallpaper.toJson(),
+      'imageUrl': wallpaper.image,
+      'url': wallpaper.image,
+      'uploadedBy': user?.email ?? '',
+      'uid': user?.uid ?? '',
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    final savedDoc = await docRef.get();
+    if (!savedDoc.exists) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'write-verify-failed',
+        message: 'Wallpaper document was not found after upload.',
+      );
+    }
+
+    debugPrint('RXT addWallpaper: saved Firestore doc ${docRef.id}');
+    return docRef.id;
   }
 
   static Future<void> addLocalWallpaper(Wallpaper wallpaper) async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('customWallpapers') ?? [];
-    saved.add(jsonEncode(wallpaper.toJson()));
-    await prefs.setStringList('customWallpapers', saved);
+    await prefs.remove('customWallpapers');
   }
 
   static Future<List<LiveWallpaperStyle>> loadLiveWallpapers() async {
@@ -765,9 +1248,15 @@ class AppData {
   static Future<List<Ringtone>> loadRingtones() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList('customRingtones') ?? [];
-    final custom = saved.map((item) {
-      return Ringtone.fromJson(jsonDecode(item) as Map<String, dynamic>);
-    }).where((r) => r.audioUrl.isNotEmpty).toList();
+    final custom = <Ringtone>[];
+    for (final item in saved) {
+      try {
+        final r = Ringtone.fromJson(jsonDecode(item) as Map<String, dynamic>);
+        if (r.audioUrl.isNotEmpty) custom.add(r);
+      } catch (e) {
+        debugPrint('RXT loadRingtones: skipped corrupt local entry -> $e');
+      }
+    }
 
     final firestoreRingtones = <Ringtone>[];
     try {
@@ -777,7 +1266,8 @@ class AppData {
         final r = Ringtone.fromFirestore(doc);
         if (r.audioUrl.isNotEmpty) firestoreRingtones.add(r);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('RXT loadRingtones: Firestore fetch failed -> $e');
       // Keep app usable offline; rely on local ringtones only.
     }
 
@@ -1714,13 +2204,21 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentTab = 0;
   List<Wallpaper> wallpapers = [];
   List<String> favorites = [];
   List<Ringtone> ringtones = [];
   List<String> ringtoneFavorites = [];
+  final LocalAuthentication _localAuth = LocalAuthentication();
   bool isLoading = true;
+  bool isPremium = PremiumService.instance.isPremium;
+  bool appLockEnabled = false;
+  bool appUnlocked = true;
+  bool biometricAvailable = true;
+  bool isAuthenticating = false;
+  bool premiumPosterShowing = false;
+  DateTime? _ignoreLockUntil;
   BannerAd? bannerAd;
   bool isBannerAdReady = false;
   Timer? bannerRetryTimer;
@@ -1729,22 +2227,212 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     loadData();
-    loadBannerAd();
+    loadAppLock();
+    PremiumService.instance.addListener(_handlePremiumChanged);
+    if (!isPremium) {
+      loadBannerAd();
+      WallpaperInterstitialAdService.instance.preload();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    PremiumService.instance.removeListener(_handlePremiumChanged);
     bannerRetryTimer?.cancel();
     bannerAd?.dispose();
+    WallpaperInterstitialAdService.instance.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+
+    final ignoreLock = _ignoreLockUntil != null && DateTime.now().isBefore(_ignoreLockUntil!);
+    if (appLockEnabled && !isAuthenticating && !ignoreLock) {
+      setState(() => appUnlocked = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) => unlockApp());
+      return;
+    }
+
+    if (!appLockEnabled || appUnlocked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => showPremiumPoster());
+    }
+  }
+
+  void _handlePremiumChanged() {
+    final nextPremium = PremiumService.instance.isPremium;
+    if (!mounted || nextPremium == isPremium) return;
+
+    setState(() => isPremium = nextPremium);
+    if (nextPremium) {
+      bannerRetryTimer?.cancel();
+      bannerAd?.dispose();
+      bannerAd = null;
+      isBannerAdReady = false;
+    } else {
+      loadBannerAd();
+      WallpaperInterstitialAdService.instance.preload();
+    }
+  }
+
+  Future<void> loadAppLock() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('app_lock_enabled') ?? false;
+    final supported = await _isBiometricSupported();
+    if (!mounted) return;
+    setState(() {
+      appLockEnabled = enabled && supported;
+      appUnlocked = !appLockEnabled;
+      biometricAvailable = supported;
+    });
+    if (enabled && !supported) {
+      await prefs.setBool('app_lock_enabled', false);
+    }
+    if (appLockEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => unlockApp());
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => showPremiumPoster());
+    }
+  }
+
+  Future<bool> _isBiometricSupported() async {
+    try {
+      final supported = await _localAuth.isDeviceSupported();
+      final canCheck = await _localAuth.canCheckBiometrics;
+      return supported || canCheck;
+    } catch (e) {
+      debugPrint('RXT biometric support check failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> unlockApp() async {
+    if (!appLockEnabled || isAuthenticating) return appUnlocked;
+    setState(() => isAuthenticating = true);
+    try {
+      final success = await _localAuth.authenticate(
+        localizedReason: 'Unlock Rxt Gaming Wallpaper',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+          useErrorDialogs: true,
+        ),
+      );
+      if (mounted && success) {
+        _ignoreLockUntil = DateTime.now().add(const Duration(seconds: 3));
+        setState(() => appUnlocked = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) => showPremiumPoster());
+      }
+      return success;
+    } catch (e) {
+      debugPrint('RXT biometric unlock failed: $e');
+      return false;
+    } finally {
+      if (mounted) setState(() => isAuthenticating = false);
+    }
+  }
+
+  Future<void> setAppLockEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!enabled) {
+      await prefs.setBool('app_lock_enabled', false);
+      if (mounted) {
+        setState(() {
+          appLockEnabled = false;
+          appUnlocked = true;
+        });
+      }
+      return;
+    }
+
+    final supported = await _isBiometricSupported();
+    if (!mounted) return;
+    if (!supported) {
+      setState(() => biometricAvailable = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fingerprint/Face unlock is not available on this device')),
+      );
+      return;
+    }
+
+    setState(() {
+      biometricAvailable = true;
+      appLockEnabled = true;
+      appUnlocked = false;
+    });
+    final unlocked = await unlockApp();
+    if (!unlocked) {
+      await prefs.setBool('app_lock_enabled', false);
+      if (mounted) {
+        setState(() {
+          appLockEnabled = false;
+          appUnlocked = true;
+        });
+      }
+      return;
+    }
+    await prefs.setBool('app_lock_enabled', true);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('App lock enabled')),
+      );
+    }
+  }
+
+  Future<void> showPremiumPoster() async {
+    if (!mounted || isPremium || premiumPosterShowing) return;
+    if (appLockEnabled && !appUnlocked) return;
+    premiumPosterShowing = true;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => PremiumPosterDialog(
+        onBuy: () {
+          Navigator.pop(context);
+          Navigator.push(context, smoothRoute(const PremiumScreen()));
+        },
+      ),
+    );
+    premiumPosterShowing = false;
+  }
+
   Future<void> loadData() async {
-    final loadedWallpapers = await AppData.loadWallpapers();
-    final loadedFavorites = await AppData.getStringList('favorites');
-    final loadedRingtones = await AppData.loadRingtones();
-    final loadedRingtoneFavs = await AppData.getStringList('ringtoneFavorites');
+    List<Wallpaper> loadedWallpapers = [];
+    List<String> loadedFavorites = [];
+    List<Ringtone> loadedRingtones = [];
+    List<String> loadedRingtoneFavs = [];
+
+    try {
+      loadedWallpapers = await AppData.loadWallpapers();
+    } catch (e) {
+      debugPrint('RXT loadData: loadWallpapers failed -> $e');
+    }
+
+    try {
+      loadedFavorites = await AppData.getStringList('favorites');
+    } catch (e) {
+      debugPrint('RXT loadData: favorites failed -> $e');
+    }
+
+    try {
+      loadedRingtones = await AppData.loadRingtones();
+    } catch (e) {
+      debugPrint('RXT loadData: loadRingtones failed -> $e');
+    }
+
+    try {
+      loadedRingtoneFavs = await AppData.getStringList('ringtoneFavorites');
+    } catch (e) {
+      debugPrint('RXT loadData: ringtoneFavorites failed -> $e');
+    }
+
+    debugPrint('RXT loadData: wallpapers=${loadedWallpapers.length} ringtones=${loadedRingtones.length}');
+
     if (!mounted) return;
     setState(() {
       wallpapers = loadedWallpapers;
@@ -1756,6 +2444,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void loadBannerAd() {
+    if (isPremium) return;
     bannerRetryTimer?.cancel();
     bannerAd?.dispose();
     isBannerAdReady = false;
@@ -1817,6 +2506,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: loadData,
         onFavoritesChanged: (newFavs) => setState(() => favorites = newFavs),
         isAdmin: isAdmin,
+        isPremium: isPremium,
+        onPremiumTap: () {
+          Navigator.push(context, smoothRoute(const PremiumScreen()));
+        },
         onToggleTheme: widget.onToggleTheme,
       ),
       _CategoriesTab(
@@ -1846,10 +2539,22 @@ class _HomeScreenState extends State<HomeScreen> {
         isDark: isDark,
         onToggleTheme: widget.onToggleTheme,
         isAdmin: isAdmin,
+        isPremium: isPremium,
+        appLockEnabled: appLockEnabled,
+        biometricAvailable: biometricAvailable,
+        onAppLockChanged: setAppLockEnabled,
         onLogout: logout,
         onDataChanged: loadData,
       ),
     ];
+
+    if (appLockEnabled && !appUnlocked) {
+      return AppLockedScreen(
+        isDark: isDark,
+        isAuthenticating: isAuthenticating,
+        onUnlock: unlockApp,
+      );
+    }
 
     return Scaffold(
       backgroundColor: isDark ? premiumBackground : const Color(0xFFF3F4F6),
@@ -1857,7 +2562,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isBannerAdReady && bannerAd != null)
+          if (!isPremium && isBannerAdReady && bannerAd != null)
             Container(
               alignment: Alignment.center,
               height: bannerAd!.size.height.toDouble(),
@@ -1930,6 +2635,8 @@ class _WallpapersTab extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final ValueChanged<List<String>> onFavoritesChanged;
   final bool isAdmin;
+  final bool isPremium;
+  final VoidCallback onPremiumTap;
   final VoidCallback onToggleTheme;
 
   const _WallpapersTab({
@@ -1939,6 +2646,8 @@ class _WallpapersTab extends StatefulWidget {
     required this.onRefresh,
     required this.onFavoritesChanged,
     required this.isAdmin,
+    required this.isPremium,
+    required this.onPremiumTap,
     required this.onToggleTheme,
   });
 
@@ -2030,7 +2739,9 @@ class _WallpapersTabState extends State<_WallpapersTab> {
     }).toList();
   }
 
-  void openPreview(Wallpaper w) {
+  Future<void> openPreview(Wallpaper w) async {
+    await WallpaperInterstitialAdService.instance.showIfEligible();
+    if (!mounted) return;
     Navigator.push(context, smoothRoute(PreviewScreen(wallpaper: w)))
         .then((_) => widget.onRefresh());
   }
@@ -2151,6 +2862,8 @@ class _WallpapersTabState extends State<_WallpapersTab> {
           ),
 
           // ── Search bar ──────────────────────────────────────────
+          if (!widget.isPremium)
+            PremiumOpenBanner(onTap: widget.onPremiumTap),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Column(
@@ -3194,9 +3907,10 @@ class _RingtonesTabState extends State<_RingtonesTab> {
     widget.onFavoritesChanged(favs);
   }
 
-  void openPreview(Ringtone r) async {
+  Future<void> openPreview(Ringtone r) async {
     await _previewPlayer.stop();
     if (mounted) setState(() => _playingUrl = null);
+    await WallpaperInterstitialAdService.instance.showIfEligible();
     if (!mounted) return;
     Navigator.push(context, smoothRoute(RingtonePreviewScreen(ringtone: r)))
         .then((_) => widget.onRefresh());
@@ -3382,8 +4096,17 @@ class RingtoneTile extends StatelessWidget {
                     children: [
                       Icon(Icons.label_rounded, size: 12, color: isDark ? Colors.white38 : Colors.black38),
                       const SizedBox(width: 4),
-                      Text(ringtone.category, style: TextStyle(
-                        fontSize: 12, color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w600)),
+                      Flexible(
+                        child: Text(ringtone.category, style: TextStyle(
+                          fontSize: 12, color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w600)),
+                      ),
+                      if (ringtone.isPremium) ...[
+                        const SizedBox(width: 8),
+                        const WallpaperAccessBadge(
+                          label: 'PREMIUM',
+                          icon: Icons.workspace_premium_rounded,
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -3524,10 +4247,16 @@ class _FavoritesTabState extends State<_FavoritesTab> {
                                   wallpaper: w,
                                   isFavorite: true,
                                   animationIndex: idx,
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    smoothRoute(PreviewScreen(wallpaper: w)),
-                                  ).then((_) => widget.onRefresh()),
+                                  onTap: () async {
+                                    await WallpaperInterstitialAdService
+                                        .instance
+                                        .showIfEligible();
+                                    if (!context.mounted) return;
+                                    Navigator.push(
+                                      context,
+                                      smoothRoute(PreviewScreen(wallpaper: w)),
+                                    ).then((_) => widget.onRefresh());
+                                  },
                                 );
                               },
                             );
@@ -3550,10 +4279,16 @@ class _FavoritesTabState extends State<_FavoritesTab> {
                                 ringtone: r,
                                 isFavorite: true,
                                 onFavoriteToggle: () => _toggleRingtoneFavorite(r),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  smoothRoute(RingtonePreviewScreen(ringtone: r)),
-                                ).then((_) => widget.onRefresh()),
+                                onTap: () async {
+                                  await WallpaperInterstitialAdService
+                                      .instance
+                                      .showIfEligible();
+                                  if (!context.mounted) return;
+                                  Navigator.push(
+                                    context,
+                                    smoothRoute(RingtonePreviewScreen(ringtone: r)),
+                                  ).then((_) => widget.onRefresh());
+                                },
                               );
                             },
                           ),
@@ -3636,6 +4371,10 @@ class _ProfileTab extends StatelessWidget {
   final bool isDark;
   final VoidCallback onToggleTheme;
   final bool isAdmin;
+  final bool isPremium;
+  final bool appLockEnabled;
+  final bool biometricAvailable;
+  final ValueChanged<bool> onAppLockChanged;
   final VoidCallback onLogout;
   final Future<void> Function() onDataChanged;
 
@@ -3643,6 +4382,10 @@ class _ProfileTab extends StatelessWidget {
     required this.isDark,
     required this.onToggleTheme,
     required this.isAdmin,
+    required this.isPremium,
+    required this.appLockEnabled,
+    required this.biometricAvailable,
+    required this.onAppLockChanged,
     required this.onLogout,
     required this.onDataChanged,
   });
@@ -3731,6 +4474,35 @@ class _ProfileTab extends StatelessWidget {
               label: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
               isDark: isDark,
               onTap: onToggleTheme,
+            ),
+            const SizedBox(height: 20),
+
+            _sectionLabel('Security', isDark),
+            _SettingsSwitchTile(
+              icon: Icons.fingerprint_rounded,
+              label: 'Fingerprint / Face App Lock',
+              subtitle: biometricAvailable
+                  ? 'Ask for device unlock when app opens'
+                  : 'Not available on this device',
+              value: appLockEnabled,
+              enabled: biometricAvailable,
+              isDark: isDark,
+              onChanged: onAppLockChanged,
+            ),
+            const SizedBox(height: 20),
+
+            _sectionLabel('Premium', isDark),
+            _SettingsTile(
+              icon: isPremium
+                  ? Icons.verified_rounded
+                  : Icons.workspace_premium_rounded,
+              label: isPremium ? 'Premium Active' : 'Go Premium',
+              isDark: isDark,
+              accent: isPremium ? Colors.greenAccent : premiumPink,
+              onTap: () => Navigator.push(
+                context,
+                smoothRoute(const PremiumScreen()),
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -3839,6 +4611,64 @@ class _SettingsTile extends StatelessWidget {
         title: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 15)),
         trailing: Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white24 : Colors.black26),
         onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
+
+class _SettingsSwitchTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool value;
+  final bool enabled;
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  const _SettingsSwitchTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.enabled,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = enabled
+        ? (isDark ? Colors.white70 : const Color(0xFF374151))
+        : (isDark ? Colors.white30 : Colors.black26);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      child: SwitchListTile(
+        value: value,
+        onChanged: enabled ? onChanged : null,
+        secondary: Icon(icon, color: color, size: 22),
+        title: Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 15),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black38,
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
+        activeColor: premiumCyan,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
@@ -3983,6 +4813,28 @@ class WallpaperTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (wallpaper.isPremium || wallpaper.is4k)
+                    Positioned(
+                      top: isNew ? 42 : 10,
+                      left: 10,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (wallpaper.isPremium)
+                            const WallpaperAccessBadge(
+                              label: 'PREMIUM',
+                              icon: Icons.workspace_premium_rounded,
+                            ),
+                          if (wallpaper.isPremium && wallpaper.is4k)
+                            const SizedBox(width: 6),
+                          if (wallpaper.is4k)
+                            const WallpaperAccessBadge(
+                              label: '4K',
+                              icon: Icons.high_quality_rounded,
+                            ),
+                        ],
+                      ),
+                    ),
                   // Favourite button
                   Positioned(
                     top: 10,
@@ -4065,6 +4917,63 @@ class WallpaperTile extends StatelessWidget {
     );
   }
 }
+
+class WallpaperAccessBadge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+
+  const WallpaperAccessBadge({
+    super.key,
+    required this.label,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                premiumPink.withValues(alpha: 0.88),
+                premiumViolet.withValues(alpha: 0.88),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            boxShadow: [
+              BoxShadow(
+                color: premiumPink.withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 12),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class WallpaperListScreen extends StatelessWidget {
   final String title;
   final List<Wallpaper> wallpapers;
@@ -4075,7 +4984,9 @@ class WallpaperListScreen extends StatelessWidget {
     required this.wallpapers,
   });
 
-  void openPreview(BuildContext context, Wallpaper wallpaper) {
+  Future<void> openPreview(BuildContext context, Wallpaper wallpaper) async {
+    await WallpaperInterstitialAdService.instance.showIfEligible();
+    if (!context.mounted) return;
     Navigator.push(
       context,
       smoothRoute(PreviewScreen(wallpaper: wallpaper)),
@@ -4189,6 +5100,19 @@ class _PreviewScreenState extends State<PreviewScreen> {
     );
   }
 
+  bool get requiresPremiumAccess => widget.wallpaper.isPremium || widget.wallpaper.is4k;
+
+  bool get hasPremiumAccess => PremiumService.instance.isPremium;
+
+  Future<bool> ensurePremiumAccess(String action) async {
+    if (!requiresPremiumAccess || hasPremiumAccess) return true;
+    HapticFeedback.mediumImpact();
+    showMessage('Premium required to $action this wallpaper');
+    await Navigator.push(context, smoothRoute(const PremiumScreen()));
+    if (mounted) setState(() {});
+    return PremiumService.instance.isPremium;
+  }
+
   String get safeWallpaperName {
     final safeName = widget.wallpaper.title
         .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
@@ -4246,8 +5170,49 @@ class _PreviewScreenState extends State<PreviewScreen> {
     return targetPath;
   }
 
+  Future<File> prepareWallpaperFileForSetting(File sourceFile) async {
+    final bytes = await sourceFile.readAsBytes();
+    final decodedImage = img.decodeImage(bytes);
+    if (decodedImage == null) {
+      debugPrint(
+        'RXT setWallpaper: decode failed, using original file=${sourceFile.path} bytes=${bytes.length}',
+      );
+      return sourceFile;
+    }
+
+    const maxSide = 2160;
+    img.Image outputImage = decodedImage;
+    final longestSide =
+        decodedImage.width > decodedImage.height ? decodedImage.width : decodedImage.height;
+
+    if (longestSide > maxSide) {
+      outputImage = img.copyResize(
+        decodedImage,
+        width: decodedImage.width >= decodedImage.height ? maxSide : null,
+        height: decodedImage.height > decodedImage.width ? maxSide : null,
+        interpolation: img.Interpolation.linear,
+      );
+    }
+
+    final directory = await getTemporaryDirectory();
+    final preparedFile = File('${directory.path}/${safeWallpaperName}_set.jpg');
+    await preparedFile.writeAsBytes(
+      img.encodeJpg(outputImage, quality: 92),
+      flush: true,
+    );
+
+    debugPrint(
+      'RXT setWallpaper: prepared file=${preparedFile.path} '
+      'source=${decodedImage.width}x${decodedImage.height} '
+      'output=${outputImage.width}x${outputImage.height} '
+      'bytes=${await preparedFile.length()}',
+    );
+    return preparedFile;
+  }
+
   Future<void> downloadOnly() async {
     HapticFeedback.lightImpact();
+    if (!await ensurePremiumAccess('download')) return;
     try {
       setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
@@ -4277,6 +5242,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
   Future<void> saveToGallery() async {
     HapticFeedback.lightImpact();
+    if (!await ensurePremiumAccess('save')) return;
     try {
       setState(() { isLoading = true; _downloadProgress = 0; });
       final hasAccess = await requestGalleryAccess();
@@ -4300,6 +5266,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
   Future<void> shareWallpaper() async {
     HapticFeedback.lightImpact();
+    if (!await ensurePremiumAccess('share')) return;
     try {
       setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
@@ -4313,23 +5280,31 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
   Future<void> setWallpaper(int location) async {
     HapticFeedback.lightImpact();
+    if (!await ensurePremiumAccess('set')) return;
     try {
       setState(() { isLoading = true; _downloadProgress = 0; });
       final file = await downloadWallpaper();
+      final preparedFile = await prepareWallpaperFileForSetting(file);
       final manager = WallpaperManagerFlutter();
-      final success = await manager.setWallpaper(file, location);
+      debugPrint(
+        'RXT setWallpaper: calling plugin location=$location path=${preparedFile.path}',
+      );
+      final success = await manager.setWallpaper(preparedFile, location);
       if (!mounted) return;
       if (success) HapticFeedback.heavyImpact();
-      showMessage(success ? 'Wallpaper set ✓' : 'Wallpaper not set');
-    } catch (_) {
+      showMessage(success ? 'Wallpaper set' : 'Wallpaper not set');
+    } catch (e, stack) {
+      debugPrint('RXT setWallpaper failed: $e');
+      debugPrint('RXT setWallpaper stack: $stack');
       if (mounted) showMessage('Set wallpaper failed');
     } finally {
       if (mounted) setState(() { isLoading = false; _downloadProgress = 0; });
     }
   }
-
-  void openWallpaperOptions() {
+  Future<void> openWallpaperOptions() async {
     HapticFeedback.lightImpact();
+    if (!await ensurePremiumAccess('set')) return;
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: premiumPanel,
@@ -4412,16 +5387,18 @@ class _PreviewScreenState extends State<PreviewScreen> {
             ),
           ),
           // Gradient overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.5),
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.88),
-                ],
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.88),
+                  ],
+                ),
               ),
             ),
           ),
@@ -4505,13 +5482,17 @@ class _PreviewScreenState extends State<PreviewScreen> {
                               children: [
                                 const Icon(Icons.auto_awesome_rounded, color: premiumCyan, size: 16),
                                 const SizedBox(width: 6),
-                                Text(
-                                  widget.wallpaper.category,
-                                  style: const TextStyle(
-                                    color: Color(0xFFB9F6FF), fontSize: 14, fontWeight: FontWeight.w800,
+                                Flexible(
+                                  child: Text(
+                                    widget.wallpaper.category,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFFB9F6FF), fontSize: 14, fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 8),
                                 const Icon(Icons.zoom_in_rounded, color: Colors.white38, size: 14),
                                 const SizedBox(width: 4),
                                 const Text(
@@ -4520,6 +5501,25 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                 ),
                               ],
                             ),
+                            if (widget.wallpaper.isPremium || widget.wallpaper.is4k) ...[
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (widget.wallpaper.isPremium)
+                                    const WallpaperAccessBadge(
+                                      label: 'PREMIUM',
+                                      icon: Icons.workspace_premium_rounded,
+                                    ),
+                                  if (widget.wallpaper.is4k)
+                                    const WallpaperAccessBadge(
+                                      label: '4K',
+                                      icon: Icons.high_quality_rounded,
+                                    ),
+                                ],
+                              ),
+                            ],
                             // Download progress bar
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 220),
@@ -4558,7 +5558,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                 Expanded(
                                   child: PremiumActionButton(
                                     icon: Icons.wallpaper_rounded,
-                                    label: 'Set',
+                                    label: requiresPremiumAccess && !hasPremiumAccess ? 'Premium' : 'Set',
                                     onPressed: isLoading ? null : openWallpaperOptions,
                                   ),
                                 ),
@@ -4566,7 +5566,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                 Expanded(
                                   child: PremiumActionButton(
                                     icon: Icons.download_rounded,
-                                    label: 'Download',
+                                    label: requiresPremiumAccess && !hasPremiumAccess ? 'Premium' : 'Download',
                                     filled: false,
                                     onPressed: isLoading ? null : downloadOnly,
                                   ),
@@ -4578,7 +5578,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                               width: double.infinity,
                               child: PremiumActionButton(
                                 icon: Icons.photo_library_rounded,
-                                label: 'Save to Gallery',
+                                label: requiresPremiumAccess && !hasPremiumAccess ? 'Unlock Premium' : 'Save to Gallery',
                                 onPressed: isLoading ? null : saveToGallery,
                               ),
                             ),
@@ -5527,6 +6527,8 @@ class _AdminScreenState extends State<AdminScreen> {
   final imageController = TextEditingController();
   String selectedCategory = wallpaperCategories.first;
   bool isLoading = false;
+  bool isPremiumWallpaper = false;
+  bool is4kWallpaper = false;
 
   @override
   void dispose() {
@@ -5569,24 +6571,35 @@ class _AdminScreenState extends State<AdminScreen> {
       title: title,
       image: image,
       category: category,
+      isPremium: isPremiumWallpaper,
+      is4k: is4kWallpaper,
     );
 
     try {
       setState(() => isLoading = true);
-      await AppData.addWallpaper(wallpaper);
+      final docId = await AppData.addWallpaper(wallpaper);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wallpaper added')),
+        SnackBar(content: Text('Wallpaper added to Firebase: $docId')),
       );
       Navigator.pop(context);
-    } catch (_) {
-      await AppData.addLocalWallpaper(wallpaper);
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      final message = e.code == 'permission-denied'
+          ? 'Firestore rules are blocking upload. In Firebase Console > Firestore Database > Rules, allow admin email to write wallpapers.'
+          : 'Firebase upload failed: ${e.code} ${e.message ?? ''}';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 7),
+        ),
+      );
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved locally')),
+        SnackBar(content: Text('Upload failed: $e')),
       );
-      Navigator.pop(context);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -5654,6 +6667,30 @@ class _AdminScreenState extends State<AdminScreen> {
                       setState(() => selectedCategory = value);
                     },
             ),
+            const SizedBox(height: 14),
+            SwitchListTile(
+              value: isPremiumWallpaper,
+              onChanged: isLoading
+                  ? null
+                  : (value) => setState(() => isPremiumWallpaper = value),
+              title: const Text('Premium wallpaper'),
+              subtitle: const Text('View sab kar sakte hain, set/download premium users only'),
+              secondary: const Icon(Icons.workspace_premium_rounded),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              tileColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              value: is4kWallpaper,
+              onChanged: isLoading
+                  ? null
+                  : (value) => setState(() => is4kWallpaper = value),
+              title: const Text('4K wallpaper'),
+              subtitle: const Text('4K bhi premium users hi set/download karenge'),
+              secondary: const Icon(Icons.high_quality_rounded),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              tileColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
+            ),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -5693,6 +6730,7 @@ class _AdminRingtoneScreenState extends State<AdminRingtoneScreen> {
   final coverController = TextEditingController();
   String selectedCategory = ringtoneCategories.first;
   bool isLoading = false;
+  bool isPremiumRingtone = false;
 
   @override
   void dispose() {
@@ -5738,6 +6776,7 @@ class _AdminRingtoneScreenState extends State<AdminRingtoneScreen> {
       audioUrl: audioUrl,
       category: category,
       coverImage: coverImage,
+      isPremium: isPremiumRingtone,
     );
 
     try {
@@ -5818,6 +6857,18 @@ class _AdminRingtoneScreenState extends State<AdminRingtoneScreen> {
                       setState(() => selectedCategory = value);
                     },
             ),
+            const SizedBox(height: 14),
+            SwitchListTile(
+              value: isPremiumRingtone,
+              onChanged: isLoading
+                  ? null
+                  : (value) => setState(() => isPremiumRingtone = value),
+              title: const Text('Premium ringtone'),
+              subtitle: const Text('Listen sab kar sakte hain, set/download premium users only'),
+              secondary: const Icon(Icons.workspace_premium_rounded),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              tileColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
+            ),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -5860,6 +6911,26 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
   StreamSubscription<PlayerState>? _stateSub;
 
   String get safeName => widget.ringtone.title.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+
+  bool get requiresPremiumAccess => widget.ringtone.isPremium;
+
+  bool get hasPremiumAccess => PremiumService.instance.isPremium;
+
+  Future<bool> ensurePremiumAccess(String action) async {
+    if (!requiresPremiumAccess || hasPremiumAccess) return true;
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Premium required to $action this ringtone'),
+        backgroundColor: premiumPanel,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+    await Navigator.push(context, smoothRoute(const PremiumScreen()));
+    if (mounted) setState(() {});
+    return PremiumService.instance.isPremium;
+  }
 
   @override
   void initState() {
@@ -5963,6 +7034,7 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
 
   Future<void> _downloadOnly() async {
     if (isBusy) return;
+    if (!await ensurePremiumAccess('download')) return;
     setState(() => isBusy = true);
     try {
       final file = await _downloadAudio();
@@ -5995,6 +7067,7 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
 
   Future<void> _setAsRingtone({bool isRetry = false}) async {
     if (isBusy) return;
+    if (!await ensurePremiumAccess('set')) return;
     setState(() => isBusy = true);
     try {
       final file = await _downloadAudio();
@@ -6049,6 +7122,7 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
   }
 
   Future<void> _shareRingtone() async {
+    if (!await ensurePremiumAccess('share')) return;
     try {
       final file = await _downloadAudio();
       await Share.shareXFiles([XFile(file.path)], text: 'Check out this ringtone: ${widget.ringtone.title}');
@@ -6113,6 +7187,13 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
               const SizedBox(height: 6),
               Text(widget.ringtone.category,
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.w700)),
+              if (widget.ringtone.isPremium) ...[
+                const SizedBox(height: 12),
+                const WallpaperAccessBadge(
+                  label: 'PREMIUM',
+                  icon: Icons.workspace_premium_rounded,
+                ),
+              ],
               const SizedBox(height: 28),
 
               // ── Progress ──────────────────────────────────
@@ -6176,7 +7257,7 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       icon: const Icon(Icons.download_rounded),
-                      label: const Text('Download'),
+                      label: Text(requiresPremiumAccess && !hasPremiumAccess ? 'Premium' : 'Download'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -6199,7 +7280,10 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
                         icon: isBusy
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.music_note_rounded, color: Colors.white),
-                        label: const Text('Set as Ringtone', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                        label: Text(
+                          requiresPremiumAccess && !hasPremiumAccess ? 'Unlock Premium' : 'Set as Ringtone',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ),
                   ),
@@ -6212,3 +7296,4 @@ class _RingtonePreviewScreenState extends State<RingtonePreviewScreen> with Widg
     );
   }
 }
+
